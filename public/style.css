@@ -1,114 +1,34 @@
-/* Reset basic spacing */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
 
-/* Overall background */
-body {
-    background-color: #e5ddd5; 
-    display: flex;
-    justify-content: center;
-    height: 100vh;
-}
+body { background-color: #e5ddd5; display: flex; justify-content: center; height: 100vh; }
 
-/* Main container */
-#chat-container {
-    width: 100%;
-    max-width: 600px;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
+#chat-container { width: 100%; max-width: 600px; display: flex; flex-direction: column; height: 100%; }
 
-/* Top bar */
-#header {
-    background-color: #075e54;
-    color: white;
-    padding: 15px;
-    font-size: 20px;
-    font-weight: bold;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
+#header { background-color: #075e54; color: white; padding: 15px; font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
 
-/* Messages area */
-#messages {
-    list-style-type: none;
-    padding: 20px;
-    flex-grow: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+/* 🌟 NEW: Install Button Style */
+#install-btn { background-color: white; color: #075e54; border: none; padding: 5px 10px; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer; }
 
-/* 🌟 UPGRADED: Base message bubble with Animation 🌟 */
-#messages li {
-    padding: 8px 12px;
-    border-radius: 8px;
-    max-width: 80%;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-    word-wrap: break-word;
-    display: flex;
-    flex-direction: column;
-    
-    /* This adds the smooth pop-in animation */
-    animation: popIn 0.3s ease-out forwards; 
-}
+/* 🌟 NEW: Active Users Style */
+#active-users { background-color: #128c7e; color: white; padding: 5px 15px; font-size: 12px; white-space: nowrap; overflow-x: auto; }
 
-/* 🌟 NEW: My messages (Right side, WhatsApp Green) 🌟 */
-.my-message {
-    align-self: flex-end;
-    background-color: #dcf8c6; 
-    border-top-right-radius: 0; /* Flat top-right corner like WhatsApp */
-}
+#messages { list-style-type: none; padding: 20px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 
-/* 🌟 NEW: Other messages (Left side, White) 🌟 */
-.other-message {
-    align-self: flex-start;
-    background-color: #ffffff;
-    border-top-left-radius: 0; /* Flat top-left corner */
-}
+#messages li { padding: 8px 12px; border-radius: 8px; max-width: 80%; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; display: flex; flex-direction: column; animation: popIn 0.3s ease-out forwards; }
 
-/* 🌟 NEW: Make the username look nice 🌟 */
-.sender-name {
-    font-size: 12px;
-    font-weight: bold;
-    color: #075e54;
-    margin-bottom: 3px;
-}
+.my-message { align-self: flex-end; background-color: #dcf8c6; border-top-right-radius: 0; }
+.other-message { align-self: flex-start; background-color: #ffffff; border-top-left-radius: 0; }
 
-/* Bottom typing area */
-#form {
-    background-color: #f0f0f0;
-    padding: 10px;
-    display: flex;
-    gap: 10px;
-}
+.sender-name { font-size: 12px; font-weight: bold; color: #075e54; margin-bottom: 3px; }
 
-#input {
-    flex-grow: 1;
-    border: none;
-    padding: 12px 15px;
-    border-radius: 20px;
-    font-size: 16px;
-    outline: none;
-}
+/* 🌟 NEW: Timestamp Style */
+.timestamp { font-size: 10px; color: #888; align-self: flex-end; margin-top: 4px; }
 
-button {
-    background-color: #128c7e;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 16px;
-    font-weight: bold;
-}
+/* 🌟 NEW: Typing Indicator Style */
+#typing-indicator { padding: 0 20px 10px 20px; font-size: 12px; color: #888; font-style: italic; height: 20px; }
 
-/* 🌟 NEW: The Animation Logic 🌟 */
-@keyframes popIn {
-    0% { opacity: 0; transform: translateY(15px) scale(0.95); }
-    100% { opacity: 1; transform: translateY(0) scale(1); }
-}
+#form { background-color: #f0f0f0; padding: 10px; display: flex; gap: 10px; }
+#input { flex-grow: 1; border: none; padding: 12px 15px; border-radius: 20px; font-size: 16px; outline: none; }
+#send-btn { background-color: #128c7e; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 16px; font-weight: bold; }
+
+@keyframes popIn { 0% { opacity: 0; transform: translateY(15px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
