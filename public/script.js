@@ -1,19 +1,52 @@
 const socket = io();
 
-const form = document.getElementById('form');
+// Get elements for login and chat
+const loginScreen = document.getElementById('login-screen');
+const loginForm = document.getElementById('login-form');
+const usernameInput = document.getElementById('username-input');
+
+const chatContainer = document.getElementById('chat-container');
+const chatForm = document.getElementById('chat-form');
 const input = document.getElementById('input');
 const messages = document.getElementById('messages');
 const userListSpan = document.getElementById('user-list');
 const typingIndicator = document.getElementById('typing-indicator');
-const clearBtn = document.getElementById('clear-btn'); // 🌟 NEW: Get the clear button
+const clearBtn = document.getElementById('clear-btn');
 
-let username = prompt("Welcome to Chit Chat Lobby! What is your name?");
-if (!username) username = "Anonymous";
+let username = "";
+let userColor = "";
+let avatarUrl = "";
 
-const userColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+// 🌟 NEW: Handle the Login Form submission
+loginForm.addEventListener('submit', (e) => {
+    e.preventDefault(); // Stop the page from refreshing
+    username = usernameInput.value.trim();
+    
+    if (username) {
+        // Generate color and avatar
+        userColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+        avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+        
+        // Hide login, show chat
+        loginScreen.classList.add('hidden');
+        chatContainer.classList.remove('hidden');
+        
+        // Tell the server we joined
+        socket.emit('new user', username);
+    }
+});
 
-socket.emit('new user', username);
+// Clear button logic
+clearBtn.addEventListener('click', () => {
+    messages.innerHTML = ''; 
+});
+
+// Security function to prevent malicious code
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
 
 // Detect typing
 let typingTimeout;
@@ -25,19 +58,8 @@ input.addEventListener('input', () => {
     }, 1500);
 });
 
-// 🌟 NEW: Make the trash can button work
-clearBtn.addEventListener('click', () => {
-    messages.innerHTML = ''; 
-});
-
-// 🌟 NEW: Security function to prevent malicious code in messages
-function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
-form.addEventListener('submit', (e) => {
+// Handle sending messages
+chatForm.addEventListener('submit', (e) => {
     e.preventDefault(); 
     const messageText = input.value.trim();
     
@@ -65,6 +87,7 @@ form.addEventListener('submit', (e) => {
     }
 });
 
+// Server events
 socket.on('user list', (users) => {
     userListSpan.textContent = users.join(', ');
 });
@@ -83,11 +106,10 @@ socket.on('chat message', (data) => {
     const isMe = data.user === username;
     item.classList.add(isMe ? 'my-message' : 'other-message');
     
-    // 🌟 UPDATED: Using escapeHTML(data.text) to keep the app secure!
     item.innerHTML = `
         <img src="${data.avatar}" class="avatar" alt="avatar">
         <div class="message-content">
-            <span class="sender-name" style="color: ${data.color}">${isMe ? 'You' : data.user}</span>
+            <span class="sender-name" style="color: ${data.color}">${isMe ? 'You' : escapeHTML(data.user)}</span>
             <span class="message-text">${escapeHTML(data.text)}</span>
             <span class="timestamp">${data.time}</span>
         </div>
