@@ -6,19 +6,19 @@ const messages = document.getElementById('messages');
 const userListSpan = document.getElementById('user-list');
 const typingIndicator = document.getElementById('typing-indicator');
 const installBtn = document.getElementById('install-btn');
+const clearBtn = document.getElementById('clear-btn'); // 🌟 NEW: Get the clear button
 
 let username = prompt("Welcome to Chit Chat Lobby! What is your name?");
 if (!username) username = "Anonymous";
 
-// 🌟 NEW: Tell the server we joined
 socket.emit('new user', username);
 
-// 🌟 NEW: PWA Install Logic for Android
+// PWA Install Logic for Android
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    installBtn.style.display = 'block'; // Show the button!
+    installBtn.style.display = 'block'; 
 });
 
 installBtn.addEventListener('click', async () => {
@@ -32,14 +32,18 @@ installBtn.addEventListener('click', async () => {
     }
 });
 
-// 🌟 NEW: Detect when we are typing
+// 🌟 NEW: Clear Chat Logic
+clearBtn.addEventListener('click', () => {
+    messages.innerHTML = ''; // This clears all messages from your screen
+});
+
 let typingTimeout;
 input.addEventListener('input', () => {
     socket.emit('typing', { user: username, isTyping: true });
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => {
         socket.emit('typing', { user: username, isTyping: false });
-    }, 1500); // Stop typing after 1.5 seconds of no keys
+    }, 1500);
 });
 
 form.addEventListener('submit', (e) => {
@@ -48,19 +52,17 @@ form.addEventListener('submit', (e) => {
         socket.emit('chat message', {
             user: username,
             text: input.value,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) // 🌟 NEW: Add Timestamp
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
         });
         input.value = ''; 
-        socket.emit('typing', { user: username, isTyping: false }); // Stop typing indicator
+        socket.emit('typing', { user: username, isTyping: false }); 
     }
 });
 
-// 🌟 NEW: Update User List
 socket.on('user list', (users) => {
     userListSpan.textContent = users.join(', ');
 });
 
-// 🌟 NEW: Show Typing Indicator
 socket.on('typing', (data) => {
     if (data.isTyping) {
         typingIndicator.textContent = `${data.user} is typing...`;
@@ -69,11 +71,9 @@ socket.on('typing', (data) => {
     }
 });
 
-// Handle incoming messages
 socket.on('chat message', (data) => {
     const item = document.createElement('li');
     
-    // Add Timestamp logic to the HTML
     if (data.user === username) {
         item.classList.add('my-message');
         item.innerHTML = `<span class="sender-name">You</span> ${data.text} <span class="timestamp">${data.time}</span>`;
