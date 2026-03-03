@@ -1,0 +1,85 @@
+/* Reset basic spacing so it looks the same on all phones */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* The overall background, using the classic WhatsApp chat background color */
+body {
+    background-color: #e5ddd5; 
+    display: flex;
+    justify-content: center;
+    height: 100vh; /* Takes up the full height of your phone screen */
+}
+
+/* The main container holding our app */
+#chat-container {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* The top bar */
+#header {
+    background-color: #075e54; /* WhatsApp dark green */
+    color: white;
+    padding: 15px;
+    font-size: 20px;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* The area where messages appear */
+#messages {
+    list-style-type: none;
+    padding: 20px;
+    flex-grow: 1;
+    overflow-y: auto; /* Adds a scrollbar when there are too many messages */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* How individual message bubbles look */
+#messages li {
+    background-color: #ffffff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    max-width: 80%;
+    align-self: flex-start;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    word-wrap: break-word; /* Prevents long words from breaking the screen */
+}
+
+/* The bottom typing area */
+#form {
+    background-color: #f0f0f0;
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+/* The text box */
+#input {
+    flex-grow: 1;
+    border: none;
+    padding: 12px 15px;
+    border-radius: 20px;
+    font-size: 16px;
+    outline: none;
+}
+
+/* The send button */
+button {
+    background-color: #128c7e; /* WhatsApp lighter green */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: bold;
+}
