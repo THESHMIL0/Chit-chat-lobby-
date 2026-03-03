@@ -2,7 +2,7 @@
   "name": "Chit Chat Lobby",
   "short_name": "Chit Chat",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#e5ddd5",
   "theme_color": "#075e54",
   "icons": [
