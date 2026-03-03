@@ -17,7 +17,7 @@ let username = "";
 let userColor = "";
 let avatarUrl = "";
 
-// 🌟 NEW: Handle the Login Form submission
+// Handle the Login Form submission
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault(); // Stop the page from refreshing
     username = usernameInput.value.trim();
@@ -64,6 +64,7 @@ chatForm.addEventListener('submit', (e) => {
     const messageText = input.value.trim();
     
     if (messageText) {
+        // Slash Commands
         if (messageText === '/clear') {
             messages.innerHTML = ''; 
             input.value = '';
@@ -74,6 +75,7 @@ chatForm.addEventListener('submit', (e) => {
             return;
         }
 
+        // Send the message to the server
         socket.emit('chat message', {
             user: username,
             text: messageText,
@@ -87,7 +89,7 @@ chatForm.addEventListener('submit', (e) => {
     }
 });
 
-// Server events
+// Server events for Users and Typing
 socket.on('user list', (users) => {
     userListSpan.textContent = users.join(', ');
 });
@@ -100,7 +102,8 @@ socket.on('typing', (data) => {
     }
 });
 
-socket.on('chat message', (data) => {
+// 🌟 NEW: A reusable function to draw messages on the screen
+function displayMessage(data) {
     const item = document.createElement('li');
     
     const isMe = data.user === username;
@@ -117,4 +120,16 @@ socket.on('chat message', (data) => {
     
     messages.appendChild(item);
     messages.scrollTop = messages.scrollHeight; 
+}
+
+// 🌟 NEW: Listen for the history when you first log in
+socket.on('chat history', (historyArray) => {
+    historyArray.forEach(messageData => {
+        displayMessage(messageData); // Draw each old message
+    });
+});
+
+// 🌟 UPDATED: Listen for new incoming messages
+socket.on('chat message', (data) => {
+    displayMessage(data); // Draw the new message
 });
