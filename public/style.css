@@ -6,29 +6,39 @@ body { background-color: #e5ddd5; display: flex; justify-content: center; height
 
 #header { background-color: #075e54; color: white; padding: 15px; font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
 
-/* 🌟 NEW: Install Button Style */
-#install-btn { background-color: white; color: #075e54; border: none; padding: 5px 10px; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer; }
-
-/* 🌟 NEW: Active Users Style */
 #active-users { background-color: #128c7e; color: white; padding: 5px 15px; font-size: 12px; white-space: nowrap; overflow-x: auto; }
 
 #messages { list-style-type: none; padding: 20px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 
-#messages li { padding: 8px 12px; border-radius: 8px; max-width: 80%; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; display: flex; flex-direction: column; animation: popIn 0.3s ease-out forwards; }
+/* 🌟 UPDATED: Layout for Avatars */
+#messages li { 
+    padding: 8px 12px; 
+    border-radius: 8px; 
+    max-width: 80%; 
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1); 
+    word-wrap: break-word; 
+    display: flex; 
+    align-items: flex-start; /* Align avatar with text */
+    gap: 8px; /* Space between avatar and text */
+    animation: popIn 0.3s ease-out forwards; 
+}
 
-.my-message { align-self: flex-end; background-color: #dcf8c6; border-top-right-radius: 0; }
+/* 🌟 NEW: Avatar Styling */
+.avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+
+.message-content { display: flex; flex-direction: column; width: 100%; }
+
+.my-message { align-self: flex-end; background-color: #dcf8c6; border-top-right-radius: 0; flex-direction: row-reverse; }
 .other-message { align-self: flex-start; background-color: #ffffff; border-top-left-radius: 0; }
 
-.sender-name { font-size: 12px; font-weight: bold; color: #075e54; margin-bottom: 3px; }
+.sender-name { font-size: 12px; font-weight: bold; margin-bottom: 3px; }
 
-/* 🌟 NEW: Timestamp Style */
 .timestamp { font-size: 10px; color: #888; align-self: flex-end; margin-top: 4px; }
 
-/* 🌟 NEW: Typing Indicator Style */
 #typing-indicator { padding: 0 20px 10px 20px; font-size: 12px; color: #888; font-style: italic; height: 20px; }
 
 #form { background-color: #f0f0f0; padding: 10px; display: flex; gap: 10px; }
 #input { flex-grow: 1; border: none; padding: 12px 15px; border-radius: 20px; font-size: 16px; outline: none; }
-#send-btn { background-color: #128c7e; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 16px; font-weight: bold; }
+#send-btn { background-color: #128c7e; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 16px; font-weight: bold; cursor: pointer; }
 
 @keyframes popIn { 0% { opacity: 0; transform: translateY(15px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
