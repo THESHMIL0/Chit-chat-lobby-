@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chit Chat Lobby</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#075e54">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="chat-container">
         <div id="header">Chit Chat Lobby 😸</div>
-        
         <ul id="messages"></ul>
-        
         <form id="form" action="">
             <input id="input" autocomplete="off" placeholder="Type a message..." required />
             <button>Send</button>
@@ -20,5 +22,15 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(() => console.log('Service Worker Registered!'))
+                    .catch((err) => console.log('Service Worker Failed', err));
+            });
+        }
+    </script>
 </body>
 </html>
