@@ -13,7 +13,7 @@ const userListSpan = document.getElementById('user-list');
 const typingIndicator = document.getElementById('typing-indicator');
 const clearBtn = document.getElementById('clear-btn');
 
-// 🌟 NEW: Elements for Dark Mode and Emojis
+// Elements for Dark Mode and Emojis
 const themeToggle = document.getElementById('theme-toggle');
 const emojiBtn = document.getElementById('emoji-btn');
 const emojiPicker = document.getElementById('emoji-picker');
@@ -24,10 +24,9 @@ let username = "";
 let userColor = "";
 let avatarUrl = "";
 
-// 🌟 NEW: Dark Mode Toggle Logic
+// Dark Mode Toggle Logic
 themeToggle.addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
-    // Change the icon based on the theme
     if (document.body.classList.contains('dark-mode')) {
         themeToggle.textContent = '☀️';
     } else {
@@ -35,18 +34,19 @@ themeToggle.addEventListener('click', () => {
     }
 });
 
-// 🌟 NEW: Emoji Picker Toggle Logic
+// Emoji Picker Toggle Logic
 emojiBtn.addEventListener('click', () => {
     emojiPicker.classList.toggle('hidden');
 });
 
-// 🌟 NEW: When an emoji is clicked, add it to the input field!
+// When an emoji is clicked, add it to the input field!
 emojiPicker.addEventListener('emoji-click', event => {
-    input.value += event.detail.unicode; // Add emoji to text
-    emojiPicker.classList.add('hidden'); // Hide picker after choosing
-    input.focus(); // Put the cursor back in the text box
+    input.value += event.detail.unicode; 
+    emojiPicker.classList.add('hidden'); 
+    input.focus(); 
 });
 
+// Handle the Login Form submission
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault(); 
     username = usernameInput.value.trim();
@@ -57,6 +57,14 @@ loginForm.addEventListener('submit', (e) => {
         
         loginScreen.classList.add('hidden');
         chatContainer.classList.remove('hidden');
+        
+        // 🌟 NEW: Request Fullscreen Mode!
+        // We target document.documentElement (which is the <html> tag) to make the whole page full screen.
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch((err) => {
+                console.log(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        }
         
         socket.emit('new user', username);
     }
@@ -106,7 +114,7 @@ chatForm.addEventListener('submit', (e) => {
         
         input.value = ''; 
         socket.emit('typing', { user: username, isTyping: false }); 
-        emojiPicker.classList.add('hidden'); // Also hide emoji picker if open
+        emojiPicker.classList.add('hidden'); 
     }
 });
 
