@@ -5,32 +5,12 @@ const input = document.getElementById('input');
 const messages = document.getElementById('messages');
 const userListSpan = document.getElementById('user-list');
 const typingIndicator = document.getElementById('typing-indicator');
-const installBtn = document.getElementById('install-btn');
-const clearBtn = document.getElementById('clear-btn'); // 🌟 NEW: Get the clear button
+const clearBtn = document.getElementById('clear-btn'); 
 
 let username = prompt("Welcome to Chit Chat Lobby! What is your name?");
 if (!username) username = "Anonymous";
 
 socket.emit('new user', username);
-
-// PWA Install Logic for Android
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.style.display = 'block'; 
-});
-
-installBtn.addEventListener('click', async () => {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            installBtn.style.display = 'none';
-        }
-        deferredPrompt = null;
-    }
-});
 
 // 🌟 NEW: Clear Chat Logic
 clearBtn.addEventListener('click', () => {
