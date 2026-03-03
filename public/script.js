@@ -13,14 +13,40 @@ const userListSpan = document.getElementById('user-list');
 const typingIndicator = document.getElementById('typing-indicator');
 const clearBtn = document.getElementById('clear-btn');
 
-// 🌟 NEW: Load our notification sound (a nice gentle pop!)
+// 🌟 NEW: Elements for Dark Mode and Emojis
+const themeToggle = document.getElementById('theme-toggle');
+const emojiBtn = document.getElementById('emoji-btn');
+const emojiPicker = document.getElementById('emoji-picker');
+
 const notifySound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
 
 let username = "";
 let userColor = "";
 let avatarUrl = "";
 
-// Handle the Login Form submission
+// 🌟 NEW: Dark Mode Toggle Logic
+themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    // Change the icon based on the theme
+    if (document.body.classList.contains('dark-mode')) {
+        themeToggle.textContent = '☀️';
+    } else {
+        themeToggle.textContent = '🌙';
+    }
+});
+
+// 🌟 NEW: Emoji Picker Toggle Logic
+emojiBtn.addEventListener('click', () => {
+    emojiPicker.classList.toggle('hidden');
+});
+
+// 🌟 NEW: When an emoji is clicked, add it to the input field!
+emojiPicker.addEventListener('emoji-click', event => {
+    input.value += event.detail.unicode; // Add emoji to text
+    emojiPicker.classList.add('hidden'); // Hide picker after choosing
+    input.focus(); // Put the cursor back in the text box
+});
+
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault(); 
     username = usernameInput.value.trim();
@@ -36,19 +62,16 @@ loginForm.addEventListener('submit', (e) => {
     }
 });
 
-// Clear button logic
 clearBtn.addEventListener('click', () => {
     messages.innerHTML = ''; 
 });
 
-// Security function
 function escapeHTML(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 }
 
-// Detect typing
 let typingTimeout;
 input.addEventListener('input', () => {
     socket.emit('typing', { user: username, isTyping: true });
@@ -58,7 +81,6 @@ input.addEventListener('input', () => {
     }, 1500);
 });
 
-// Handle sending messages
 chatForm.addEventListener('submit', (e) => {
     e.preventDefault(); 
     const messageText = input.value.trim();
@@ -84,10 +106,10 @@ chatForm.addEventListener('submit', (e) => {
         
         input.value = ''; 
         socket.emit('typing', { user: username, isTyping: false }); 
+        emojiPicker.classList.add('hidden'); // Also hide emoji picker if open
     }
 });
 
-// Server events
 socket.on('user list', (users) => {
     userListSpan.textContent = users.join(', ');
 });
@@ -100,7 +122,6 @@ socket.on('typing', (data) => {
     }
 });
 
-// 🌟 UPDATED: Added "isHistory" so we know if the message is old or new
 function displayMessage(data, isHistory = false) {
     const item = document.createElement('li');
     
@@ -114,9 +135,7 @@ function displayMessage(data, isHistory = false) {
 
     const isMe = data.user === username;
     
-    // 🌟 NEW: If the message isn't yours, isn't old history, and isn't a system message, play the sound!
     if (!isMe && !isHistory) {
-        // .catch() prevents console errors if the browser is being overly strict
         notifySound.play().catch(err => console.log("Sound blocked by browser:", err));
     }
 
@@ -139,16 +158,12 @@ function displayMessage(data, isHistory = false) {
     messages.scrollTop = messages.scrollHeight; 
 }
 
-// Listen for chat history
 socket.on('chat history', (historyArray) => {
     historyArray.forEach(messageData => {
-        // 🌟 Pass "true" so the sound doesn't play for old messages
         displayMessage(messageData, true); 
     });
 });
 
-// Listen for new messages
 socket.on('chat message', (data) => {
-    // 🌟 Pass "false" because this is a brand new message, so the sound CAN play!
     displayMessage(data, false); 
 });
