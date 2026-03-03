@@ -7,6 +7,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#075e54">
     <link rel="stylesheet" href="style.css">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
 </head>
 <body>
     <div id="login-screen">
@@ -21,7 +22,8 @@
         <div id="header">
             <span>Chit Chat Lobby 😸</span>
             <div>
-                <button id="clear-btn" style="background: none; border: none; font-size: 20px; cursor: pointer; margin-right: 10px;">🗑️</button>
+                <button id="theme-toggle" style="background: none; border: none; font-size: 20px; cursor: pointer; margin-right: 15px;">🌙</button>
+                <button id="clear-btn" style="background: none; border: none; font-size: 20px; cursor: pointer;">🗑️</button>
             </div>
         </div>
         
@@ -29,7 +31,10 @@
         <ul id="messages"></ul>
         <div id="typing-indicator"></div>
         
+        <emoji-picker id="emoji-picker" class="hidden"></emoji-picker>
+
         <form id="chat-form" action="">
+            <button type="button" id="emoji-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 0 10px;">😀</button>
             <input id="input" autocomplete="off" placeholder="Type a message..." required />
             <button id="send-btn">Send</button>
         </form>
@@ -37,12 +42,5 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js');
-            });
-        }
-    </script>
 </body>
 </html>
