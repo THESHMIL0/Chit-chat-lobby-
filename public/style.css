@@ -1,60 +1,57 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
 
-/* 🌟 UPDATED: Added align-items to center the login box perfectly */
-body { background-color: #e5ddd5; display: flex; justify-content: center; align-items: center; height: 100vh; }
+/* Default Light Theme */
+body { background-color: #e5ddd5; display: flex; justify-content: center; align-items: center; height: 100vh; transition: background-color 0.3s; }
 
-/* 🌟 NEW: Utility class to hide elements */
 .hidden { display: none !important; }
 
-/* 🌟 NEW: Styling for the login screen */
-#login-screen {
-    background-color: white;
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    text-align: center;
-    width: 90%;
-    max-width: 350px;
-}
-
+/* Login Screen */
+#login-screen { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 350px; transition: all 0.3s; }
 #login-screen h2 { margin-bottom: 20px; color: #075e54; }
 #login-form { display: flex; flex-direction: column; gap: 15px; }
-#username-input { padding: 12px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; outline: none; }
+#username-input { padding: 12px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; outline: none; transition: all 0.3s; }
 #join-btn { background-color: #128c7e; color: white; border: none; padding: 12px; border-radius: 20px; font-size: 16px; font-weight: bold; cursor: pointer; }
 
-/* Chat Container Styling */
-#chat-container { width: 100%; max-width: 600px; display: flex; flex-direction: column; height: 100%; }
-#header { background-color: #075e54; color: white; padding: 15px; font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+/* Chat Container */
+#chat-container { width: 100%; max-width: 600px; display: flex; flex-direction: column; height: 100%; position: relative; }
+#header { background-color: #075e54; color: white; padding: 15px; font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; transition: background-color 0.3s; }
 #active-users { background-color: #128c7e; color: white; padding: 5px 15px; font-size: 12px; white-space: nowrap; overflow-x: auto; }
 #messages { list-style-type: none; padding: 20px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 
-#messages li { 
-    padding: 8px 12px; 
-    border-radius: 8px; 
-    max-width: 80%; 
-    box-shadow: 0 1px 1px rgba(0,0,0,0.1); 
-    word-wrap: break-word; 
-    display: flex; 
-    align-items: flex-start;
-    gap: 8px; 
-    animation: popIn 0.3s ease-out forwards; 
-}
+#messages li { padding: 8px 12px; border-radius: 8px; max-width: 80%; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; display: flex; align-items: flex-start; gap: 8px; animation: popIn 0.3s ease-out forwards; transition: background-color 0.3s, color 0.3s; }
 
 .avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
 .message-content { display: flex; flex-direction: column; width: 100%; }
 
-/* 🌟 UPDATED: Proper alignment for your own messages */
 .my-message { align-self: flex-end; background-color: #dcf8c6; border-top-right-radius: 0; flex-direction: row-reverse; }
 .my-message .message-content { align-items: flex-end; text-align: right; }
-
 .other-message { align-self: flex-start; background-color: #ffffff; border-top-left-radius: 0; }
 .sender-name { font-size: 12px; font-weight: bold; margin-bottom: 3px; }
 .timestamp { font-size: 10px; color: #888; align-self: flex-end; margin-top: 4px; }
 
 #typing-indicator { padding: 0 20px 10px 20px; font-size: 12px; color: #888; font-style: italic; height: 20px; }
 
-#chat-form { background-color: #f0f0f0; padding: 10px; display: flex; gap: 10px; }
-#input { flex-grow: 1; border: none; padding: 12px 15px; border-radius: 20px; font-size: 16px; outline: none; }
+#chat-form { background-color: #f0f0f0; padding: 10px; display: flex; gap: 10px; align-items: center; transition: background-color 0.3s; }
+#input { flex-grow: 1; border: none; padding: 12px 15px; border-radius: 20px; font-size: 16px; outline: none; transition: background-color 0.3s, color 0.3s; }
 #send-btn { background-color: #128c7e; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 16px; font-weight: bold; cursor: pointer; }
 
+.system-message { align-self: center !important; background-color: transparent !important; color: #555; font-size: 12px; font-style: italic; padding: 5px; box-shadow: none !important; max-width: 100%; }
+.chat-image { max-width: 100%; border-radius: 8px; margin-top: 8px; display: block; }
+
 @keyframes popIn { 0% { opacity: 0; transform: translateY(15px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* 🌟 NEW: Emoji Picker Positioning */
+#emoji-picker { position: absolute; bottom: 70px; left: 10px; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border-radius: 8px; }
+
+/* 🌟 NEW: Dark Mode Styles! */
+body.dark-mode { background-color: #121212; color: #e0e0e0; }
+body.dark-mode #login-screen { background-color: #1e1e1e; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+body.dark-mode #login-screen h2 { color: #25D366; }
+body.dark-mode #username-input { background-color: #2c2c2c; color: #fff; border-color: #444; }
+body.dark-mode #header { background-color: #1f2c34; }
+body.dark-mode #active-users { background-color: #121b22; }
+body.dark-mode #chat-form { background-color: #1e2428; }
+body.dark-mode #input { background-color: #2a3942; color: #e0e0e0; }
+body.dark-mode .other-message { background-color: #202c33; color: #e0e0e0; }
+body.dark-mode .my-message { background-color: #005c4b; color: #e0e0e0; }
+body.dark-mode .system-message { color: #aaa; }
