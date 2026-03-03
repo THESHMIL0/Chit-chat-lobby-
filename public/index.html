@@ -9,7 +9,15 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="chat-container">
+    <div id="login-screen">
+        <h2>Chit Chat Lobby 😸</h2>
+        <form id="login-form">
+            <input type="text" id="username-input" placeholder="Enter your name..." required autocomplete="off" />
+            <button type="submit" id="join-btn">Join Chat</button>
+        </form>
+    </div>
+
+    <div id="chat-container" class="hidden">
         <div id="header">
             <span>Chit Chat Lobby 😸</span>
             <div>
@@ -21,7 +29,7 @@
         <ul id="messages"></ul>
         <div id="typing-indicator"></div>
         
-        <form id="form" action="">
+        <form id="chat-form" action="">
             <input id="input" autocomplete="off" placeholder="Type a message..." required />
             <button id="send-btn">Send</button>
         </form>
