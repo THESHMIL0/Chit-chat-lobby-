@@ -13,25 +13,25 @@ const userListSpan = document.getElementById('user-list');
 const typingIndicator = document.getElementById('typing-indicator');
 const clearBtn = document.getElementById('clear-btn');
 
+// 🌟 NEW: Load our notification sound (a nice gentle pop!)
+const notifySound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+
 let username = "";
 let userColor = "";
 let avatarUrl = "";
 
 // Handle the Login Form submission
 loginForm.addEventListener('submit', (e) => {
-    e.preventDefault(); // Stop the page from refreshing
+    e.preventDefault(); 
     username = usernameInput.value.trim();
     
     if (username) {
-        // Generate color and avatar
         userColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
         avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
         
-        // Hide login, show chat
         loginScreen.classList.add('hidden');
         chatContainer.classList.remove('hidden');
         
-        // Tell the server we joined
         socket.emit('new user', username);
     }
 });
@@ -41,7 +41,7 @@ clearBtn.addEventListener('click', () => {
     messages.innerHTML = ''; 
 });
 
-// Security function to prevent malicious code
+// Security function
 function escapeHTML(str) {
     const div = document.createElement('div');
     div.textContent = str;
@@ -64,7 +64,6 @@ chatForm.addEventListener('submit', (e) => {
     const messageText = input.value.trim();
     
     if (messageText) {
-        // Slash Commands
         if (messageText === '/clear') {
             messages.innerHTML = ''; 
             input.value = '';
@@ -75,7 +74,6 @@ chatForm.addEventListener('submit', (e) => {
             return;
         }
 
-        // Send the message to the server
         socket.emit('chat message', {
             user: username,
             text: messageText,
@@ -89,7 +87,7 @@ chatForm.addEventListener('submit', (e) => {
     }
 });
 
-// Server events for Users and Typing
+// Server events
 socket.on('user list', (users) => {
     userListSpan.textContent = users.join(', ');
 });
@@ -102,18 +100,37 @@ socket.on('typing', (data) => {
     }
 });
 
-// 🌟 NEW: A reusable function to draw messages on the screen
-function displayMessage(data) {
+// 🌟 UPDATED: Added "isHistory" so we know if the message is old or new
+function displayMessage(data, isHistory = false) {
     const item = document.createElement('li');
     
+    if (data.type === 'system') {
+        item.classList.add('system-message');
+        item.textContent = data.text;
+        messages.appendChild(item);
+        messages.scrollTop = messages.scrollHeight;
+        return; 
+    }
+
     const isMe = data.user === username;
+    
+    // 🌟 NEW: If the message isn't yours, isn't old history, and isn't a system message, play the sound!
+    if (!isMe && !isHistory) {
+        // .catch() prevents console errors if the browser is being overly strict
+        notifySound.play().catch(err => console.log("Sound blocked by browser:", err));
+    }
+
     item.classList.add(isMe ? 'my-message' : 'other-message');
+    
+    let safeText = escapeHTML(data.text);
+    const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/gi;
+    safeText = safeText.replace(imageRegex, '<img src="$1" class="chat-image" alt="Shared image">');
     
     item.innerHTML = `
         <img src="${data.avatar}" class="avatar" alt="avatar">
         <div class="message-content">
             <span class="sender-name" style="color: ${data.color}">${isMe ? 'You' : escapeHTML(data.user)}</span>
-            <span class="message-text">${escapeHTML(data.text)}</span>
+            <span class="message-text">${safeText}</span>
             <span class="timestamp">${data.time}</span>
         </div>
     `;
@@ -122,14 +139,16 @@ function displayMessage(data) {
     messages.scrollTop = messages.scrollHeight; 
 }
 
-// 🌟 NEW: Listen for the history when you first log in
+// Listen for chat history
 socket.on('chat history', (historyArray) => {
     historyArray.forEach(messageData => {
-        displayMessage(messageData); // Draw each old message
+        // 🌟 Pass "true" so the sound doesn't play for old messages
+        displayMessage(messageData, true); 
     });
 });
 
-// 🌟 UPDATED: Listen for new incoming messages
+// Listen for new messages
 socket.on('chat message', (data) => {
-    displayMessage(data); // Draw the new message
+    // 🌟 Pass "false" because this is a brand new message, so the sound CAN play!
+    displayMessage(data, false); 
 });
