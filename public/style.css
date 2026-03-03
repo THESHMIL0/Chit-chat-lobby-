@@ -1,16 +1,33 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
 
-body { background-color: #e5ddd5; display: flex; justify-content: center; height: 100vh; }
+/* 🌟 UPDATED: Added align-items to center the login box perfectly */
+body { background-color: #e5ddd5; display: flex; justify-content: center; align-items: center; height: 100vh; }
 
+/* 🌟 NEW: Utility class to hide elements */
+.hidden { display: none !important; }
+
+/* 🌟 NEW: Styling for the login screen */
+#login-screen {
+    background-color: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    text-align: center;
+    width: 90%;
+    max-width: 350px;
+}
+
+#login-screen h2 { margin-bottom: 20px; color: #075e54; }
+#login-form { display: flex; flex-direction: column; gap: 15px; }
+#username-input { padding: 12px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; outline: none; }
+#join-btn { background-color: #128c7e; color: white; border: none; padding: 12px; border-radius: 20px; font-size: 16px; font-weight: bold; cursor: pointer; }
+
+/* Chat Container Styling */
 #chat-container { width: 100%; max-width: 600px; display: flex; flex-direction: column; height: 100%; }
-
 #header { background-color: #075e54; color: white; padding: 15px; font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-
 #active-users { background-color: #128c7e; color: white; padding: 5px 15px; font-size: 12px; white-space: nowrap; overflow-x: auto; }
-
 #messages { list-style-type: none; padding: 20px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 
-/* 🌟 UPDATED: Layout for Avatars */
 #messages li { 
     padding: 8px 12px; 
     border-radius: 8px; 
@@ -18,26 +35,25 @@ body { background-color: #e5ddd5; display: flex; justify-content: center; height
     box-shadow: 0 1px 1px rgba(0,0,0,0.1); 
     word-wrap: break-word; 
     display: flex; 
-    align-items: flex-start; /* Align avatar with text */
-    gap: 8px; /* Space between avatar and text */
+    align-items: flex-start;
+    gap: 8px; 
     animation: popIn 0.3s ease-out forwards; 
 }
 
-/* 🌟 NEW: Avatar Styling */
 .avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
-
 .message-content { display: flex; flex-direction: column; width: 100%; }
 
+/* 🌟 UPDATED: Proper alignment for your own messages */
 .my-message { align-self: flex-end; background-color: #dcf8c6; border-top-right-radius: 0; flex-direction: row-reverse; }
+.my-message .message-content { align-items: flex-end; text-align: right; }
+
 .other-message { align-self: flex-start; background-color: #ffffff; border-top-left-radius: 0; }
-
 .sender-name { font-size: 12px; font-weight: bold; margin-bottom: 3px; }
-
 .timestamp { font-size: 10px; color: #888; align-self: flex-end; margin-top: 4px; }
 
 #typing-indicator { padding: 0 20px 10px 20px; font-size: 12px; color: #888; font-style: italic; height: 20px; }
 
-#form { background-color: #f0f0f0; padding: 10px; display: flex; gap: 10px; }
+#chat-form { background-color: #f0f0f0; padding: 10px; display: flex; gap: 10px; }
 #input { flex-grow: 1; border: none; padding: 12px 15px; border-radius: 20px; font-size: 16px; outline: none; }
 #send-btn { background-color: #128c7e; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 16px; font-weight: bold; cursor: pointer; }
 
