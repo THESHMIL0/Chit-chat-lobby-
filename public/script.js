@@ -25,24 +25,22 @@ const createRoomModal = document.getElementById('create-room-modal');
 const passwordModal = document.getElementById('password-modal');
 const msgOptionsModal = document.getElementById('message-options-modal');
 
-let currentUser = { name: '', avatar: '' };
-let activeRoomId = null;
-let replyingTo = null;
-let selectedMsgId = null; 
-
-// --- 🌟 THE FIX: Bulletproof Lightbox for Mobile ---
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
 
+let currentUser = { name: '', avatar: '' };
+let activeRoomId = null;
+let currentRoomPassword = ''; // 🌟 THE FIX: Save the password for reconnects
+let replyingTo = null;
+let selectedMsgId = null; 
+
 function closeLightbox() {
     lightbox.classList.add('hidden');
-    lightboxImg.src = ''; // clear memory
+    lightboxImg.src = ''; 
 }
-// Listen to both click and mobile touch!
 lightbox.addEventListener('click', closeLightbox);
 lightbox.addEventListener('touchstart', closeLightbox, { passive: true });
 
-// --- PROFILE PIC UPLOAD ---
 profilePicUpload.addEventListener('change', function() {
     if (this.files[0]) {
         const reader = new FileReader();
@@ -51,7 +49,6 @@ profilePicUpload.addEventListener('change', function() {
     }
 });
 
-// --- LOGIN ---
 document.getElementById('login-btn').addEventListener('click', () => {
     currentUser.name = usernameInput.value.trim();
     if (!currentUser.name) return alert('Enter a name');
@@ -61,7 +58,6 @@ document.getElementById('login-btn').addEventListener('click', () => {
     roomListScreen.classList.remove('hidden');
 });
 
-// --- ROOMS LIST ---
 socket.on('room list', (rooms) => {
     roomsUl.innerHTML = '';
     rooms.forEach(room => {
@@ -94,19 +90,31 @@ let pendingJoinRoom = null;
 function joinRoomPrompt(room) {
     if(room.isPrivate) {
         pendingJoinRoom = room;
+        document.getElementById('join-room-pass').value = '';
         passwordModal.classList.remove('hidden');
     } else {
-        joinRoom(room.id, '');
+        currentRoomPassword = '';
+        joinRoom(room.id, '', false);
     }
 }
 document.getElementById('join-room-submit').onclick = () => {
-    joinRoom(pendingJoinRoom.id, document.getElementById('join-room-pass').value);
+    currentRoomPassword = document.getElementById('join-room-pass').value;
+    joinRoom(pendingJoinRoom.id, currentRoomPassword, false);
     passwordModal.classList.add('hidden');
 };
 
-function joinRoom(roomId, password) {
-    socket.emit('join room', { roomId, password, user: currentUser });
+function joinRoom(roomId, password, isReconnect) {
+    socket.emit('join room', { roomId, password, user: currentUser, isReconnect });
 }
+
+// 🌟 THE FIX: Auto-Reconnect Logic!
+// If your phone falls asleep and wakes up, this seamlessly puts you back in the chat.
+socket.on('connect', () => {
+    if (currentUser.name && activeRoomId) {
+        console.log("Auto-reconnecting to room...");
+        joinRoom(activeRoomId, currentRoomPassword, true);
+    }
+});
 
 socket.on('join error', (msg) => alert(msg));
 socket.on('chat history', (data) => {
@@ -118,13 +126,10 @@ socket.on('chat history', (data) => {
     data.history.forEach(msg => displayMessage(msg, true));
 });
 
-// Close modals when clicking the dim background
 createRoomModal.addEventListener('click', (e) => { if(e.target === createRoomModal) createRoomModal.classList.add('hidden'); });
 passwordModal.addEventListener('click', (e) => { if(e.target === passwordModal) passwordModal.classList.add('hidden'); });
 msgOptionsModal.addEventListener('click', (e) => { if(e.target === msgOptionsModal) msgOptionsModal.classList.add('hidden'); });
 
-
-// --- GROUP HEADER ---
 document.getElementById('back-btn').onclick = (e) => { e.stopPropagation(); chatScreen.classList.add('hidden'); roomListScreen.classList.remove('hidden'); activeRoomId = null; };
 function updateGroupHeader(room) {
     currentRoomName.textContent = room.name;
@@ -140,7 +145,6 @@ groupPicUpload.addEventListener('change', function() {
     }
 });
 
-// --- CHAT LOGIC ---
 input.addEventListener('input', () => {
     sendMicBtn.innerHTML = input.value.trim() ? '➤' : '🎤';
 });
@@ -156,7 +160,6 @@ function sendMessage() {
 sendMicBtn.addEventListener('click', sendMessage);
 input.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
 
-// Images
 attachBtn.onclick = () => imageUpload.click();
 imageUpload.addEventListener('change', function() {
     if (this.files[0]) {
@@ -173,18 +176,16 @@ imageUpload.addEventListener('change', function() {
     }
 });
 
-// --- LONG PRESS & GESTURES ---
+// Touch Gestures & Menus
 let pressTimer;
 messages.addEventListener('touchstart', (e) => {
-    // Make sure we aren't tapping an image to open it
     if (e.target.classList.contains('chat-image')) return;
-
     const li = e.target.closest('li.my-message, li.other-message');
     if (!li) return;
     pressTimer = setTimeout(() => {
         selectedMsgId = li.id.replace('msg-', '');
         msgOptionsModal.classList.remove('hidden');
-    }, 500); // 500ms for long press
+    }, 500); 
 }, { passive: true });
 messages.addEventListener('touchend', () => clearTimeout(pressTimer));
 messages.addEventListener('touchmove', () => clearTimeout(pressTimer));
@@ -250,7 +251,6 @@ function displayMessage(data, isHistory) {
     messages.appendChild(li); messages.scrollTop = messages.scrollHeight;
 }
 
-// Open Lightbox when clicking an image
 document.getElementById('messages').addEventListener('click', (e) => { 
     if(e.target.classList.contains('chat-image')) { 
         document.getElementById('lightbox-img').src = e.target.src; 
