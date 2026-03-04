@@ -1,5 +1,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-body { background-color: #e5ddd5; display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; overflow: hidden; transition: background-color 0.3s; }
+
+/* 🌟 FIX: Added 100dvh and position: fixed to lock the UI perfectly on mobile! */
+body { background-color: #e5ddd5; display: flex; justify-content: center; align-items: center; height: 100dvh; width: 100vw; position: fixed; top: 0; left: 0; overflow: hidden; transition: background-color 0.3s; }
 .hidden { display: none !important; }
 
 #login-screen { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 350px; transition: all 0.3s; }
@@ -29,7 +31,6 @@ body { background-color: #e5ddd5; display: flex; justify-content: center; align-
 .like-btn:active { transform: scale(1.2); }
 .mic-recording { animation: pulse 1s infinite alternate; color: red; }
 
-/* 🌟 NEW: Styling for Read Receipts! */
 .ticks { font-size: 11px; margin-left: 3px; font-weight: bold; }
 .ticks.delivered { color: #888; }
 .ticks.read { color: #34b7f1; } 
