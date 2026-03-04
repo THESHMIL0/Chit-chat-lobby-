@@ -28,7 +28,19 @@ const msgOptionsModal = document.getElementById('message-options-modal');
 let currentUser = { name: '', avatar: '' };
 let activeRoomId = null;
 let replyingTo = null;
-let selectedMsgId = null; // For long press
+let selectedMsgId = null; 
+
+// --- 🌟 THE FIX: Bulletproof Lightbox for Mobile ---
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+
+function closeLightbox() {
+    lightbox.classList.add('hidden');
+    lightboxImg.src = ''; // clear memory
+}
+// Listen to both click and mobile touch!
+lightbox.addEventListener('click', closeLightbox);
+lightbox.addEventListener('touchstart', closeLightbox, { passive: true });
 
 // --- PROFILE PIC UPLOAD ---
 profilePicUpload.addEventListener('change', function() {
@@ -106,6 +118,12 @@ socket.on('chat history', (data) => {
     data.history.forEach(msg => displayMessage(msg, true));
 });
 
+// Close modals when clicking the dim background
+createRoomModal.addEventListener('click', (e) => { if(e.target === createRoomModal) createRoomModal.classList.add('hidden'); });
+passwordModal.addEventListener('click', (e) => { if(e.target === passwordModal) passwordModal.classList.add('hidden'); });
+msgOptionsModal.addEventListener('click', (e) => { if(e.target === msgOptionsModal) msgOptionsModal.classList.add('hidden'); });
+
+
 // --- GROUP HEADER ---
 document.getElementById('back-btn').onclick = (e) => { e.stopPropagation(); chatScreen.classList.add('hidden'); roomListScreen.classList.remove('hidden'); activeRoomId = null; };
 function updateGroupHeader(room) {
@@ -158,6 +176,9 @@ imageUpload.addEventListener('change', function() {
 // --- LONG PRESS & GESTURES ---
 let pressTimer;
 messages.addEventListener('touchstart', (e) => {
+    // Make sure we aren't tapping an image to open it
+    if (e.target.classList.contains('chat-image')) return;
+
     const li = e.target.closest('li.my-message, li.other-message');
     if (!li) return;
     pressTimer = setTimeout(() => {
@@ -168,7 +189,6 @@ messages.addEventListener('touchstart', (e) => {
 messages.addEventListener('touchend', () => clearTimeout(pressTimer));
 messages.addEventListener('touchmove', () => clearTimeout(pressTimer));
 
-document.getElementById('opt-cancel').onclick = () => msgOptionsModal.classList.add('hidden');
 document.getElementById('opt-delete').onclick = () => { socket.emit('delete message', selectedMsgId); msgOptionsModal.classList.add('hidden'); };
 document.getElementById('opt-like').onclick = () => { socket.emit('like message', selectedMsgId); msgOptionsModal.classList.add('hidden'); };
 document.getElementById('opt-pin').onclick = () => { 
@@ -184,6 +204,18 @@ document.getElementById('opt-reply').onclick = () => {
     msgOptionsModal.classList.add('hidden');
 };
 document.getElementById('cancel-reply-btn').onclick = () => { replyingTo = null; replyPreviewContainer.classList.add('hidden'); }
+document.getElementById('unpin-btn').onclick = () => socket.emit('unpin message');
+
+socket.on('pinned updated', (pinnedMsg) => {
+    const pinnedBanner = document.getElementById('pinned-banner');
+    if (pinnedMsg) {
+        document.getElementById('pinned-user').textContent = pinnedMsg.user;
+        document.getElementById('pinned-text').textContent = pinnedMsg.text;
+        pinnedBanner.classList.remove('hidden');
+    } else {
+        pinnedBanner.classList.add('hidden');
+    }
+});
 
 socket.on('chat message', (data) => displayMessage(data, false));
 socket.on('update likes', (data) => { const l = document.getElementById(`like-count-${data.id}`); if(l) l.textContent = data.likes > 0 ? data.likes : ''; });
@@ -218,6 +250,12 @@ function displayMessage(data, isHistory) {
     messages.appendChild(li); messages.scrollTop = messages.scrollHeight;
 }
 
-// Lightbox & Theme
-document.getElementById('messages').addEventListener('click', (e) => { if(e.target.classList.contains('chat-image')) { document.getElementById('lightbox-img').src = e.target.src; document.getElementById('lightbox').classList.remove('hidden'); } });
+// Open Lightbox when clicking an image
+document.getElementById('messages').addEventListener('click', (e) => { 
+    if(e.target.classList.contains('chat-image')) { 
+        document.getElementById('lightbox-img').src = e.target.src; 
+        document.getElementById('lightbox').classList.remove('hidden'); 
+    } 
+});
+
 document.getElementById('theme-toggle').onclick = () => document.body.classList.toggle('dark-mode');
