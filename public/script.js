@@ -35,7 +35,6 @@ const viewProfileModal = document.getElementById('view-profile-modal');
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
 
-// 🌟 NEW: Added "about" field to the user object
 let currentUser = { name: '', avatar: '', about: 'Hey there! I am using Chit Chat.' };
 let activeRoomId = null;
 let currentRoomPassword = ''; 
@@ -75,7 +74,6 @@ document.getElementById('login-btn').addEventListener('click', () => {
     roomListScreen.classList.remove('hidden');
 });
 
-// 🌟 NEW: Profile Settings Logic
 document.getElementById('settings-btn').addEventListener('click', () => {
     roomListScreen.classList.add('hidden');
     profileScreen.classList.remove('hidden');
@@ -111,7 +109,6 @@ socket.on('room list', (rooms) => {
     });
 });
 
-// Moved from header to FAB
 document.getElementById('show-create-room-btn').onclick = () => createRoomModal.classList.remove('hidden');
 document.getElementById('new-room-private').onchange = (e) => document.getElementById('new-room-pass').classList.toggle('hidden', !e.target.checked);
 
@@ -186,7 +183,6 @@ input.addEventListener('input', () => {
 function sendMessage() {
     const text = input.value.trim();
     if (text) {
-        // 🌟 NEW: Attaching "about" so friends can view your profile!
         socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), replyTo: replyingTo });
         input.value = ''; sendMicBtn.innerHTML = '🎤';
         replyingTo = null; replyPreviewContainer.classList.add('hidden');
@@ -234,7 +230,9 @@ document.getElementById('opt-pin').onclick = () => {
 document.getElementById('opt-reply').onclick = () => {
     const li = document.getElementById(`msg-${selectedMsgId}`);
     replyingTo = { user: li.dataset.sender, text: li.querySelector('.message-text')?.innerText || 'Attachment' };
-    document.getElementById('reply-preview-text').innerHTML = `<b>${replyingTo.user}</b><br>${replyingTo.text.substring(0,30)}`;
+    
+    // Beautiful little preview above the text box
+    document.getElementById('reply-preview-text').innerHTML = `<b style="color: #00a884; font-size: 13px;">${escapeHTML(replyingTo.user)}</b><br><span style="color: #54656f; font-size: 13px;">${escapeHTML(replyingTo.text).substring(0,40)}...</span>`;
     replyPreviewContainer.classList.remove('hidden'); input.focus();
     msgOptionsModal.classList.add('hidden');
 };
@@ -256,6 +254,8 @@ socket.on('chat message', (data) => displayMessage(data, false));
 socket.on('update likes', (data) => { const l = document.getElementById(`like-count-${data.id}`); if(l) l.textContent = data.likes > 0 ? data.likes : ''; });
 socket.on('message deleted', (id) => { const el = document.getElementById(`msg-${id}`); if(el) el.querySelector('.message-text').innerHTML = '<i style="color:#8696a0">🚫 Message deleted</i>'; });
 
+function escapeHTML(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+
 function displayMessage(data, isHistory) {
     const li = document.createElement('li'); li.id = `msg-${data.id}`; li.dataset.sender = data.user;
     if (data.type === 'system') { li.className = 'system-message'; li.textContent = data.text; messages.appendChild(li); messages.scrollTop = messages.scrollHeight; return; }
@@ -268,13 +268,23 @@ function displayMessage(data, isHistory) {
     if(isStacked) li.classList.add('stacked');
 
     let content = data.uploadedImage ? `<img src="${data.uploadedImage}" class="chat-image">` : `<span class="message-text">${data.text}</span>`;
-    let reply = data.replyTo ? `<div class="replied-to"><div class="replied-to-user">${data.replyTo.user}</div>${data.replyTo.text.substring(0,30)}</div>` : '';
+    
+    // 🌟 THE FIX: Beautiful Reply HTML structure inside the message bubble!
+    let replyHTML = ''; 
+    if (data.replyTo) { 
+        replyHTML = `
+        <div class="replied-to">
+            <div class="replied-to-user">${escapeHTML(data.replyTo.user)}</div>
+            <div class="replied-to-text">${escapeHTML(data.replyTo.text).substring(0, 60)}${data.replyTo.text.length > 60 ? '...' : ''}</div>
+        </div>`; 
+    }
+
     let ticks = isMe ? `<span class="ticks delivered">✔✔</span>` : '';
 
     li.innerHTML = `
         ${!isMe && !isStacked ? `<img src="${data.avatar}" class="avatar-small" data-name="${data.user}" data-about="${data.about || 'Hey there! I am using Chit Chat.'}">` : ''}
         ${!isStacked ? `<span class="sender-name" style="color:${isMe ? '#00a884' : '#ea005e'}">${isMe ? 'You' : data.user}</span>` : ''}
-        ${reply}
+        ${replyHTML}
         ${content}
         <div class="meta-row">
             <span class="likes-badge" id="like-count-${data.id}">${data.likes > 0 ? '❤️ ' + data.likes : ''}</span>
@@ -285,7 +295,6 @@ function displayMessage(data, isHistory) {
     messages.appendChild(li); messages.scrollTop = messages.scrollHeight;
 }
 
-// 🌟 NEW: Click an avatar to see their profile!
 document.getElementById('messages').addEventListener('click', (e) => { 
     if(e.target.classList.contains('chat-image')) { 
         document.getElementById('lightbox-img').src = e.target.src; 
