@@ -1,5 +1,22 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-body { background-color: #efeae2; display: flex; justify-content: center; align-items: center; height: 100dvh; width: 100vw; position: fixed; top: 0; left: 0; overflow: hidden; transition: background-color 0.3s; }
+
+/* 🌟 THE FIX: Block text highlighting and Android popups! */
+body { 
+    background-color: #efeae2; display: flex; justify-content: center; align-items: center; 
+    height: 100dvh; width: 100vw; position: fixed; top: 0; left: 0; overflow: hidden; transition: background-color 0.3s; 
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
+    -webkit-touch-callout: none; /* Disable Android/iOS long-press menu */
+}
+
+/* Allow typing in inputs */
+input, textarea {
+    -webkit-user-select: auto;
+    -ms-user-select: auto;
+    user-select: auto;
+}
+
 .hidden { display: none !important; }
 
 #login-screen { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 350px; transition: all 0.3s; z-index: 100; }
@@ -29,7 +46,6 @@ body { background-color: #efeae2; display: flex; justify-content: center; align-
 .my-message .message-content { align-items: flex-end; text-align: right; }
 .other-message { align-self: flex-start; background-color: #ffffff; border-top-left-radius: 0; }
 
-/* 🌟 THE FIX: Stacking Styles */
 #messages li.stacked { margin-top: -6px !important; }
 li.stacked .avatar { visibility: hidden; height: 0; width: 0; margin: 0; opacity: 0; }
 li.stacked .sender-name { display: none; }
@@ -40,7 +56,6 @@ li.stacked .sender-name { display: none; }
 .message-text { font-size: 15px; line-height: 1.3; color: #111b21; }
 .timestamp { font-size: 11px; color: #667781; align-self: flex-end; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
 
-/* 🌟 THE FIX: Borderless, Transparent Icons */
 .like-btn, .msg-pin-btn, .msg-delete-btn { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 2px; font-size: 13px; cursor: pointer; opacity: 0.6; transition: opacity 0.2s, transform 0.1s; display: flex; align-items: center; gap: 2px; color: inherit; }
 .like-btn:hover, .msg-pin-btn:hover, .msg-delete-btn:hover { opacity: 1; transform: scale(1.1); }
 .like-btn span { font-size: 11px; font-weight: bold; color: #e53935; } 
@@ -54,7 +69,6 @@ li.stacked .sender-name { display: none; }
 .ticks.read { color: #53bdeb; } 
 .deleted-text { font-style: italic; color: #8696a0; font-size: 14px; }
 
-/* Animated Typing Bubble */
 #typing-indicator { padding: 0 20px 10px 20px; display: flex; align-items: center; gap: 8px; }
 .typing-bubble { background-color: #fff; padding: 8px 12px; border-radius: 15px; border-bottom-left-radius: 0; box-shadow: 0 1px 1px rgba(0,0,0,0.1); display: flex; gap: 4px; }
 .dot { width: 6px; height: 6px; background-color: #8696a0; border-radius: 50%; animation: bounce 1.3s linear infinite; }
@@ -66,13 +80,11 @@ li.stacked .sender-name { display: none; }
 #chat-msg-box { flex-grow: 1; border: none; padding: 12px 16px; border-radius: 24px; font-size: 15px; outline: none; transition: background-color 0.3s, color 0.3s; min-width: 0; background-color: white; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
 #chat-form button { flex-shrink: 0; color: #54656f; }
 
-/* 🌟 THE FIX: Circular WhatsApp Send Button */
 #send-btn { background-color: #00a884 !important; color: white !important; border: none; border-radius: 50% !important; width: 42px; height: 42px; font-size: 15px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.2); padding: 0 !important; }
 
 .system-message { align-self: center !important; background-color: rgba(225,245,254,0.8) !important; border-radius: 10px !important; color: #54656f; font-size: 12px; font-style: italic; padding: 6px 12px !important; box-shadow: 0 1px 1px rgba(0,0,0,0.05) !important; max-width: 100%; pointer-events: none; margin: 4px 0; }
 .chat-image { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; cursor: pointer; }
 
-/* Lightbox Styles */
 #lightbox { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; justify-content: center; align-items: center; }
 #lightbox-img { max-width: 95%; max-height: 95%; border-radius: 10px; object-fit: contain; }
 #lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; }
