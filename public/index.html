@@ -20,13 +20,21 @@
 
     <div id="chat-container" class="hidden">
         <div id="header">
-            <span>Chit Chat Lobby 😸</span>
+            <span>Lobby 😸</span>
+            
+            <input type="text" id="search-input" placeholder="🔍 Search..." autocomplete="off" />
+
             <div>
-                <button id="theme-toggle" style="background: none; border: none; font-size: 20px; cursor: pointer; margin-right: 15px;">🌙</button>
+                <button id="theme-toggle" style="background: none; border: none; font-size: 20px; cursor: pointer; margin-right: 10px;">🌙</button>
                 <button id="clear-btn" style="background: none; border: none; font-size: 20px; cursor: pointer;">🗑️</button>
             </div>
         </div>
         
+        <div id="pinned-banner" class="hidden">
+            <div>📌 <b id="pinned-user"></b>: <span id="pinned-text"></span></div>
+            <button id="unpin-btn">❌</button>
+        </div>
+
         <div id="active-users">Online: <span id="user-list"></span></div>
         <ul id="messages"></ul>
         <div id="typing-indicator"></div>
@@ -40,12 +48,9 @@
 
         <form id="chat-form" action="">
             <button type="button" id="emoji-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">😀</button>
-            
             <button type="button" id="attach-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">📎</button>
             <input type="file" id="image-upload" accept="image/*" style="display: none;" />
-
             <button type="button" id="mic-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">🎤</button>
-            
             <input id="input" autocomplete="off" placeholder="Type a message..." required />
             <button id="send-btn">Send</button>
         </form>
@@ -53,5 +58,10 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW failed', err));
+        }
+    </script>
 </body>
 </html>
