@@ -18,7 +18,7 @@ input { -webkit-user-select: auto; user-select: auto; }
 #login-btn, .modal button:not(.danger) { width: 100%; background-color: #00a884; color: white; padding: 16px; border-radius: 20px; font-size: 16px; font-weight: bold; border: none; cursor: pointer; transition: transform 0.1s; }
 #login-btn:active, .modal button:active { transform: scale(0.98); }
 
-/* 🌟 NEW: Profile Settings Screen */
+/* Profile Settings Screen */
 .profile-container { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; background-color: #f0f2f5; flex-grow: 1; }
 #settings-avatar-container { position: relative; width: 140px; height: 140px; border-radius: 50%; margin-bottom: 30px; cursor: pointer; }
 #settings-avatar-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #00a884; }
@@ -36,7 +36,7 @@ input { -webkit-user-select: auto; user-select: auto; }
 .header-subtitle { font-size: 12px; opacity: 0.8; font-weight: normal; }
 .icon-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.9; }
 
-/* 🌟 NEW: Floating Action Button (FAB) */
+/* Floating Action Button (FAB) */
 .fab-btn { position: absolute; bottom: 25px; right: 25px; background-color: #00a884; color: white; border: none; border-radius: 18px; width: 60px; height: 60px; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 100; transition: transform 0.2s; }
 .fab-btn:active { transform: scale(0.9); }
 
@@ -61,7 +61,6 @@ input { -webkit-user-select: auto; user-select: auto; }
 #messages li.stacked.other-message { border-top-left-radius: 12px; }
 li.stacked .sender-name, li.stacked .avatar-small { display: none !important; }
 
-/* 🌟 NEW: Clicking Avatar Pointer */
 .avatar-small { width: 22px; height: 22px; border-radius: 50%; position: absolute; left: -30px; top: 0; cursor: pointer; pointer-events: auto; }
 .sender-name { font-size: 12px; font-weight: bold; margin-bottom: 1px; color: #ea005e; }
 .message-text { font-size: 15px; line-height: 1.3; color: #111b21; pointer-events: none; }
@@ -70,6 +69,38 @@ li.stacked .sender-name, li.stacked .avatar-small { display: none !important; }
 .ticks { font-size: 13px; letter-spacing: -3px; margin-right: 3px; } .ticks.read { color: #53bdeb; }
 
 li.system-message { align-self: center !important; margin: 10px auto !important; width: fit-content !important; background-color: rgba(225,245,254,0.9) !important; border-radius: 12px !important; color: #54656f !important; font-size: 12px; font-style: normal !important; padding: 6px 14px !important; box-shadow: 0 1px 1px rgba(0,0,0,0.05) !important; text-align: center; }
+
+/* 🌟 THE FIX: Beautiful WhatsApp Reply Bubble Inside Chat */
+.replied-to {
+    background-color: rgba(0, 0, 0, 0.05); 
+    border-left: 4px solid #00a884; 
+    border-radius: 8px; 
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.my-message .replied-to {
+    background-color: rgba(0, 0, 0, 0.08); 
+    border-left: 4px solid #005c4b; 
+}
+.replied-to-user {
+    font-weight: bold;
+    font-size: 12px;
+    color: #00a884;
+    margin-bottom: 2px;
+}
+.my-message .replied-to-user {
+    color: #005c4b;
+}
+.replied-to-text {
+    font-size: 13px;
+    color: #54656f;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 /* Modals */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 200; display: flex; justify-content: center; align-items: flex-end; }
@@ -95,6 +126,7 @@ li.system-message { align-self: center !important; margin: 10px auto !important;
 
 #pinned-banner { background-color: rgba(255, 243, 205, 0.95); color: #856404; padding: 10px 15px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(5px); z-index: 2; border-bottom: 1px solid rgba(0,0,0,0.05); }
 #unpin-btn { background: none; border: none; cursor: pointer; font-size: 14px; margin-left: 10px; opacity: 0.6; }
+
 #reply-preview-container { background-color: rgba(240, 242, 245, 0.95); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #00a884; font-size: 14px; color: #111b21; margin: 0 8px -10px 8px; border-radius: 12px; z-index: 1; backdrop-filter: blur(5px); }
 
 @keyframes popIn { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
@@ -123,3 +155,10 @@ body.dark-mode .profile-container { background-color: #111b21; }
 body.dark-mode .profile-input-group { background-color: #202c33; }
 body.dark-mode .profile-input-group input { color: #e9edef; }
 body.dark-mode #view-profile-name { color: #e9edef !important; }
+
+/* 🌟 Dark Mode Reply Fixes */
+body.dark-mode .replied-to { background-color: rgba(255, 255, 255, 0.05); border-left: 4px solid #21c063; }
+body.dark-mode .my-message .replied-to { background-color: rgba(0, 0, 0, 0.15); border-left: 4px solid #00a884; }
+body.dark-mode .replied-to-user { color: #21c063; }
+body.dark-mode .my-message .replied-to-user { color: #00a884; }
+body.dark-mode .replied-to-text { color: rgba(255, 255, 255, 0.7); }
