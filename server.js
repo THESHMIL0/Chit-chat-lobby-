@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const sqlite3 = require('sqlite3').verbose(); // 🌟 NEW: Database library!
+const sqlite3 = require('sqlite3').verbose(); 
 
 const app = express();
 const server = http.createServer(app);
@@ -10,15 +10,12 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 🌟 NEW: Initialize Database
 const db = new sqlite3.Database('./chat.db');
 let messageHistory = [];
 
 db.serialize(() => {
-    // Create the table if it doesn't exist
     db.run(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, timestamp INTEGER, data TEXT)`);
     
-    // Load existing messages when the server starts!
     db.all("SELECT data FROM history ORDER BY timestamp ASC LIMIT 50", (err, rows) => {
         if (!err && rows) {
             messageHistory = rows.map(row => JSON.parse(row.data));
@@ -27,10 +24,9 @@ db.serialize(() => {
     });
 });
 
-// Helper functions for the database
 function insertMessage(msg) {
     messageHistory.push(msg);
-    if (messageHistory.length > 50) messageHistory.shift(); // Keep RAM light
+    if (messageHistory.length > 50) messageHistory.shift(); 
     db.run("INSERT INTO history (id, timestamp, data) VALUES (?, ?, ?)", [msg.id, Date.now(), JSON.stringify(msg)]);
 }
 
@@ -58,25 +54,36 @@ io.on('connection', (socket) => {
         data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
         data.type = 'chat'; 
         data.likes = 0; 
-        data.status = 'delivered'; // 🌟 NEW: Default to delivered (gray ticks)
+        data.status = 'delivered'; 
         
         insertMessage(data);
         io.emit('chat message', data);
     });
 
-    // 🌟 NEW: When a user looks at the screen, mark messages as read!
+    // 🌟 NEW: Handle Message Deletion
+    socket.on('delete message', (msgId) => {
+        // Remove it from our RAM history
+        const msgIndex = messageHistory.findIndex(m => m.id === msgId);
+        if (msgIndex !== -1) {
+            messageHistory.splice(msgIndex, 1);
+        }
+        // Delete it from the Database forever!
+        db.run("DELETE FROM history WHERE id = ?", [msgId]);
+        
+        // Tell everyone to hide it!
+        io.emit('message deleted', msgId);
+    });
+
     socket.on('mark read', () => {
         let updated = false;
         messageHistory.forEach(msg => {
             if (msg.user !== activeUsersById[socket.id] && msg.status === 'delivered') {
                 msg.status = 'read';
-                updateMessageInDB(msg); // Save blue ticks to DB
+                updateMessageInDB(msg); 
                 updated = true;
             }
         });
-        if (updated) {
-            io.emit('messages read'); // Tell everyone to turn ticks blue
-        }
+        if (updated) io.emit('messages read'); 
     });
 
     socket.on('private message', (data) => {
@@ -95,7 +102,7 @@ io.on('connection', (socket) => {
         const msg = messageHistory.find(m => m.id === msgId);
         if (msg) {
             msg.likes += 1;
-            updateMessageInDB(msg); // Save likes to DB
+            updateMessageInDB(msg); 
             io.emit('update likes', { id: msgId, likes: msg.likes });
         }
     });
