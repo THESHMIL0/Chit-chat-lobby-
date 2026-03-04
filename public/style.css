@@ -9,7 +9,15 @@ body { background-color: #e5ddd5; display: flex; justify-content: center; align-
 #join-btn { background-color: #128c7e; color: white; border: none; padding: 12px; border-radius: 20px; font-size: 16px; font-weight: bold; cursor: pointer; }
 
 #chat-container { width: 100%; max-width: 600px; display: flex; flex-direction: column; height: 100%; position: relative; overflow: hidden; }
-#header { background-color: #075e54; color: white; padding: 15px; font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; transition: background-color 0.3s; }
+#header { background-color: #075e54; color: white; padding: 15px; font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; transition: background-color 0.3s; gap: 10px; }
+
+/* 🌟 NEW: Search and Pinned Banner */
+#search-input { border: none; border-radius: 15px; padding: 5px 10px; font-size: 14px; outline: none; flex-grow: 1; max-width: 150px; transition: all 0.3s; }
+#pinned-banner { background-color: #fff3cd; color: #856404; padding: 8px 15px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ffeeba; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#unpin-btn { background: none; border: none; cursor: pointer; font-size: 12px; margin-left: 10px; }
+.msg-pin-btn { background: none; border: none; font-size: 12px; cursor: pointer; opacity: 0.5; margin-left: 5px; }
+.msg-pin-btn:hover { opacity: 1; }
+
 #active-users { background-color: #128c7e; color: white; padding: 5px 15px; font-size: 12px; white-space: nowrap; overflow-x: auto; }
 #messages { list-style-type: none; padding: 20px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 #messages li { padding: 8px 12px; border-radius: 8px; max-width: 80%; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; display: flex; align-items: flex-start; gap: 8px; animation: popIn 0.3s ease-out forwards; transition: background-color 0.3s, color 0.3s; cursor: pointer; position: relative; }
@@ -33,7 +41,6 @@ body { background-color: #e5ddd5; display: flex; justify-content: center; align-
 .ticks.delivered { color: #888; }
 .ticks.read { color: #34b7f1; } 
 
-/* 🌟 NEW: Styling for Delete Button and Text */
 .msg-delete-btn { background: none; border: none; font-size: 12px; cursor: pointer; opacity: 0.5; margin-left: 5px; }
 .msg-delete-btn:hover { opacity: 1; }
 .deleted-text { font-style: italic; color: #888; font-size: 14px; }
@@ -67,3 +74,5 @@ body.dark-mode .my-message { background-color: #005c4b; color: #e0e0e0; }
 body.dark-mode .private-message { background-color: #4a2b66 !important; border-color: #6d4298; }
 body.dark-mode .like-btn { background: rgba(0,0,0,0.5); border-color: #444; color: white; }
 body.dark-mode .deleted-text { color: #999; }
+body.dark-mode #search-input { background-color: #2a3942; color: white; }
+body.dark-mode #pinned-banner { background-color: #332b00; color: #e0ca53; border-color: #665600; }
