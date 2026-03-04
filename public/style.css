@@ -2,7 +2,7 @@
 body { background-color: #efeae2; display: flex; justify-content: center; align-items: center; height: 100dvh; width: 100vw; position: fixed; top: 0; left: 0; overflow: hidden; transition: background-color 0.3s; }
 .hidden { display: none !important; }
 
-#login-screen { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 350px; transition: all 0.3s; }
+#login-screen { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 350px; transition: all 0.3s; z-index: 100; }
 #login-screen h2 { margin-bottom: 20px; color: #00a884; }
 #login-form { display: flex; flex-direction: column; gap: 15px; }
 #username-input { padding: 12px; border: 1px solid #ddd; border-radius: 20px; font-size: 16px; outline: none; transition: all 0.3s; }
@@ -11,87 +11,71 @@ body { background-color: #efeae2; display: flex; justify-content: center; align-
 #chat-container { width: 100%; max-width: 600px; display: flex; flex-direction: column; height: 100%; position: relative; overflow: hidden; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover; }
 #header { background-color: #008069; color: white; padding: 12px 15px; font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; transition: background-color 0.3s; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10; }
 
-/* Search and Pinned Banner */
 #search-input { border: none; border-radius: 20px; padding: 6px 15px; font-size: 14px; outline: none; flex-grow: 1; max-width: 160px; transition: all 0.3s; }
 #pinned-banner { background-color: #fff3cd; color: #856404; padding: 8px 15px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ffeeba; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 #unpin-btn { background: none; border: none; cursor: pointer; font-size: 12px; margin-left: 10px; opacity: 0.7; }
 
 #active-users { background-color: rgba(0, 128, 105, 0.9); color: white; padding: 4px 15px; font-size: 11px; white-space: nowrap; overflow-x: auto; font-weight: 500; }
-#messages { list-style-type: none; padding: 20px 15px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+#messages { list-style-type: none; padding: 20px 15px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; overflow-x: hidden; }
 
-/* 🌟 UPDATED: Sleek, smooth chat bubbles */
-#messages li { padding: 6px 10px 8px 10px; border-radius: 12px; max-width: 85%; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13); word-wrap: break-word; display: flex; align-items: flex-start; gap: 8px; animation: popIn 0.3s ease-out forwards; transition: background-color 0.3s, color 0.3s; position: relative; }
+/* Message Bubbles */
+#messages li { padding: 6px 10px 8px 10px; border-radius: 12px; max-width: 85%; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13); word-wrap: break-word; display: flex; align-items: flex-start; gap: 8px; animation: popIn 0.3s ease-out forwards; transition: background-color 0.3s, color 0.3s, transform 0.2s ease-out; position: relative; }
 
 .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; margin-top: 2px; }
-.message-content { display: flex; flex-direction: column; width: 100%; min-width: 0; }
+.message-content { display: flex; flex-direction: column; width: 100%; min-width: 0; pointer-events: none; } /* Let the LI handle clicks */
+.message-content * { pointer-events: auto; } /* Re-enable clicks inside the bubble */
 
 .my-message { align-self: flex-end; background-color: #dcf8c6; border-top-right-radius: 0; flex-direction: row-reverse; }
 .my-message .message-content { align-items: flex-end; text-align: right; }
 .other-message { align-self: flex-start; background-color: #ffffff; border-top-left-radius: 0; }
 
+/* 🌟 NEW: Stacking Styles */
+#messages li.stacked { margin-top: -6px !important; }
+li.stacked .avatar { visibility: hidden; height: 0; margin: 0; width: 28px; }
+li.stacked .sender-name { display: none; }
+.my-message.stacked { border-top-right-radius: 12px; }
+.other-message.stacked { border-top-left-radius: 12px; }
+
 .sender-name { font-size: 12px; font-weight: bold; margin-bottom: 2px; }
 .message-text { font-size: 15px; line-height: 1.3; color: #111b21; }
-
-/* 🌟 UPDATED: Cleaned up the bottom row (Timestamp, Likes, Ticks, Trash) */
 .timestamp { font-size: 11px; color: #667781; align-self: flex-end; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
 
-/* 🌟 THE FIX: No more bulky borders on the buttons! */
-.like-btn, .msg-pin-btn, .msg-delete-btn { 
-    background: transparent !important; 
-    border: none !important; 
-    box-shadow: none !important; 
-    padding: 0 2px; 
-    font-size: 13px; 
-    cursor: pointer; 
-    opacity: 0.6; 
-    transition: opacity 0.2s, transform 0.1s; 
-    display: flex; 
-    align-items: center; 
-    gap: 2px; 
-    color: inherit;
-}
+.like-btn, .msg-pin-btn, .msg-delete-btn { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 2px; font-size: 13px; cursor: pointer; opacity: 0.6; transition: opacity 0.2s, transform 0.1s; display: flex; align-items: center; gap: 2px; color: inherit; }
 .like-btn:hover, .msg-pin-btn:hover, .msg-delete-btn:hover { opacity: 1; transform: scale(1.1); }
-.like-btn span { font-size: 11px; font-weight: bold; color: #e53935; } /* Make the like count pop */
+.like-btn span { font-size: 11px; font-weight: bold; color: #e53935; } 
 
 .private-message { background-color: #f2ebfb !important; border: none; }
 .chat-audio { max-width: 200px; height: 35px; margin-top: 5px; outline: none; }
 .mic-recording { animation: pulse 1s infinite alternate; color: #ff3b30 !important; }
 
-/* 🌟 UPDATED: Realistic WhatsApp Ticks */
 .ticks { font-size: 14px; margin-left: 2px; font-weight: bold; letter-spacing: -3px; margin-right: 3px; }
 .ticks.delivered { color: #8696a0; }
 .ticks.read { color: #53bdeb; } 
-
 .deleted-text { font-style: italic; color: #8696a0; font-size: 14px; }
 
-#typing-indicator { padding: 0 20px 10px 20px; font-size: 12px; color: #8696a0; font-style: italic; height: 20px; }
+/* 🌟 NEW: Animated Typing Bubble */
+#typing-indicator { padding: 0 20px 10px 20px; display: flex; align-items: center; gap: 8px; }
+.typing-bubble { background-color: #fff; padding: 8px 12px; border-radius: 15px; border-bottom-left-radius: 0; box-shadow: 0 1px 1px rgba(0,0,0,0.1); display: flex; gap: 4px; }
+.dot { width: 6px; height: 6px; background-color: #8696a0; border-radius: 50%; animation: bounce 1.3s linear infinite; }
+.dot:nth-child(2) { animation-delay: -1.1s; }
+.dot:nth-child(3) { animation-delay: -0.9s; }
+#typing-user { font-size: 12px; color: #8696a0; font-style: italic; }
 
-/* 🌟 UPDATED: Sleek Input Area */
-#chat-form { background-color: #f0f2f5; padding: 8px 10px; display: flex; gap: 8px; align-items: center; transition: background-color 0.3s; width: 100%; }
+#chat-form { background-color: #f0f2f5; padding: 8px 10px; display: flex; gap: 8px; align-items: center; transition: background-color 0.3s; width: 100%; z-index: 10; }
 #input { flex-grow: 1; border: none; padding: 12px 16px; border-radius: 24px; font-size: 15px; outline: none; transition: background-color 0.3s, color 0.3s; min-width: 0; background-color: white; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
 #chat-form button { flex-shrink: 0; color: #54656f; }
-
-/* 🌟 UPDATED: Circular WhatsApp Send Button */
-#send-btn { 
-    background-color: #00a884 !important; 
-    color: white !important; 
-    border: none; 
-    border-radius: 50% !important; /* Makes it a circle! */
-    width: 42px; 
-    height: 42px; 
-    font-size: 15px; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    cursor: pointer; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-    padding: 0 !important;
-}
+#send-btn { background-color: #00a884 !important; color: white !important; border: none; border-radius: 50% !important; width: 42px; height: 42px; font-size: 15px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.2); padding: 0 !important; }
 
 .system-message { align-self: center !important; background-color: rgba(225,245,254,0.8) !important; border-radius: 10px !important; color: #54656f; font-size: 12px; font-style: italic; padding: 6px 12px !important; box-shadow: 0 1px 1px rgba(0,0,0,0.05) !important; max-width: 100%; pointer-events: none; margin: 4px 0; }
-.chat-image { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; }
+.chat-image { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; cursor: pointer; }
+
+/* 🌟 NEW: Lightbox Styles */
+#lightbox { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; justify-content: center; align-items: center; }
+#lightbox-img { max-width: 95%; max-height: 95%; border-radius: 10px; object-fit: contain; }
+#lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; }
 
 @keyframes popIn { 0% { opacity: 0; transform: translateY(10px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
 @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.3); } }
 
 #emoji-picker { position: absolute; bottom: 70px; left: 10px; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border-radius: 8px; }
@@ -100,7 +84,7 @@ body { background-color: #efeae2; display: flex; justify-content: center; align-
 .replied-to { background-color: rgba(0,0,0,0.04); border-left: 4px solid #00a884; padding: 6px 8px; margin-bottom: 6px; border-radius: 6px; font-size: 13px; color: #667781; text-align: left; width: 100%; }
 .replied-to-user { font-weight: bold; margin-bottom: 3px; color: #00a884; font-size: 12px; }
 
-/* 🌟 UPDATED: Dark Mode matching WhatsApp Web's exact colors! */
+/* Dark Mode */
 body.dark-mode { background-color: #111b21; color: #e9edef; }
 body.dark-mode #login-screen { background-color: #202c33; color: #e9edef; }
 body.dark-mode #username-input { background-color: #2a3942; color: #e9edef; border-color: #2a3942; }
@@ -120,3 +104,4 @@ body.dark-mode .deleted-text { color: rgba(255,255,255,0.5); }
 body.dark-mode #search-input { background-color: #2a3942; color: white; }
 body.dark-mode #pinned-banner { background-color: #1f2c34; color: #00a884; border-color: #202c33; }
 body.dark-mode .replied-to { background-color: rgba(255,255,255,0.05); color: #e9edef; }
+body.dark-mode .typing-bubble { background-color: #202c33; }
