@@ -7,13 +7,10 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#008069">
     <link rel="stylesheet" href="style.css">
-    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
 </head>
 <body>
     <div id="lightbox" class="hidden">
-        <div id="lightbox-close-area">
-            <span id="lightbox-close">✖</span>
-        </div>
+        <div id="lightbox-close-area"><span id="lightbox-close">✖</span></div>
         <img id="lightbox-img" src="">
     </div>
 
@@ -70,7 +67,7 @@
             <img id="current-room-logo" src="" class="header-avatar">
             <div class="header-text-container">
                 <span id="current-room-name"></span>
-                <span class="header-subtitle">Tap to change info</span>
+                <span class="header-subtitle" id="online-users-text">Tap to change info</span>
             </div>
         </div>
         <input type="file" id="group-pic-upload" accept="image/*" class="hidden" />
@@ -93,6 +90,7 @@
                 <input id="the-chat-box" type="text" autocomplete="nope" spellcheck="false" placeholder="Message" />
                 <button id="attach-btn" class="icon-btn">📎</button>
                 <input type="file" id="image-upload" accept="image/*" class="hidden" />
+                <button id="ghost-btn" class="icon-btn" style="font-size: 20px;">👻</button>
             </div>
             <button id="send-mic-btn" class="circle-btn">🎤</button>
         </div>
@@ -114,6 +112,7 @@
             <button id="opt-reply">↩️ Reply</button>
             <button id="opt-like">❤️ Like</button>
             <button id="opt-pin">📌 Pin</button>
+            <button id="opt-edit" class="hidden">✏️ Edit</button>
             <button id="opt-delete" class="danger">🗑️ Delete</button>
         </div>
     </div>
@@ -123,28 +122,18 @@
             <div class="modal-drag-pill"></div>
             <h3>Create New Room</h3>
             <p class="modal-subtitle">Start a new conversation space</p>
-
             <div class="input-with-icon">
                 <span class="input-icon">🏷️</span>
                 <input type="text" id="new-room-name" placeholder="Room Name" autocomplete="nope">
             </div>
-
             <div class="toggle-container">
-                <div class="toggle-text">
-                    <span class="toggle-title">Private Room</span>
-                    <span class="toggle-desc">Require a password to join</span>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="new-room-private">
-                    <span class="slider round"></span>
-                </label>
+                <div class="toggle-text"><span class="toggle-title">Private Room</span><span class="toggle-desc">Require a password to join</span></div>
+                <label class="switch"><input type="checkbox" id="new-room-private"><span class="slider round"></span></label>
             </div>
-
             <div class="input-with-icon hidden" id="password-input-container">
                 <span class="input-icon">🔒</span>
                 <input type="text" id="new-room-pass" placeholder="Set a Password" autocomplete="nope">
             </div>
-
             <button id="create-room-submit" class="primary-btn">Create Room</button>
         </div>
     </div>
@@ -154,12 +143,10 @@
             <div class="modal-drag-pill"></div>
             <h3>Private Room</h3>
             <p class="modal-subtitle">This room requires a password</p>
-
             <div class="input-with-icon">
                 <span class="input-icon">🔑</span>
                 <input type="text" id="join-room-pass" placeholder="Enter Password" autocomplete="nope">
             </div>
-
             <button id="join-room-submit" class="primary-btn">Join Room</button>
         </div>
     </div>
