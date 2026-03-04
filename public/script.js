@@ -110,7 +110,11 @@ socket.on('room list', (rooms) => {
 });
 
 document.getElementById('show-create-room-btn').onclick = () => createRoomModal.classList.remove('hidden');
-document.getElementById('new-room-private').onchange = (e) => document.getElementById('new-room-pass').classList.toggle('hidden', !e.target.checked);
+
+// 🌟 THE FIX: Hides the whole password input container (including the icon)
+document.getElementById('new-room-private').onchange = (e) => {
+    document.getElementById('password-input-container').classList.toggle('hidden', !e.target.checked);
+};
 
 document.getElementById('create-room-submit').onclick = () => {
     const name = document.getElementById('new-room-name').value;
@@ -231,7 +235,6 @@ document.getElementById('opt-reply').onclick = () => {
     const li = document.getElementById(`msg-${selectedMsgId}`);
     replyingTo = { user: li.dataset.sender, text: li.querySelector('.message-text')?.innerText || 'Attachment' };
     
-    // Beautiful little preview above the text box
     document.getElementById('reply-preview-text').innerHTML = `<b style="color: #00a884; font-size: 13px;">${escapeHTML(replyingTo.user)}</b><br><span style="color: #54656f; font-size: 13px;">${escapeHTML(replyingTo.text).substring(0,40)}...</span>`;
     replyPreviewContainer.classList.remove('hidden'); input.focus();
     msgOptionsModal.classList.add('hidden');
@@ -269,7 +272,6 @@ function displayMessage(data, isHistory) {
 
     let content = data.uploadedImage ? `<img src="${data.uploadedImage}" class="chat-image">` : `<span class="message-text">${data.text}</span>`;
     
-    // 🌟 THE FIX: Beautiful Reply HTML structure inside the message bubble!
     let replyHTML = ''; 
     if (data.replyTo) { 
         replyHTML = `
