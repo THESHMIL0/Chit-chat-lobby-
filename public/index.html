@@ -58,7 +58,7 @@
                 <label>About</label>
                 <input type="text" id="settings-about" class="premium-input" autocomplete="nope" placeholder="Hey there! I am using Chit Chat." />
             </div>
-            <button id="save-profile-btn">Save Profile</button>
+            <button id="save-profile-btn" class="primary-btn">Save Profile</button>
         </div>
     </div>
 
@@ -100,9 +100,12 @@
     <div id="view-profile-modal" class="modal hidden">
         <div class="modal-content" style="align-items: center; text-align: center;">
             <div class="modal-drag-pill"></div>
-            <img id="view-profile-avatar" src="" style="width:120px; height:120px; border-radius:50%; margin-bottom:10px; object-fit:cover; border: 2px solid #00a884;">
+            <img id="view-profile-avatar" src="" style="width:120px; height:120px; border-radius:50%; margin-bottom:10px; object-fit:cover; border: 3px solid #00a884;">
             <h2 id="view-profile-name" style="color: #111b21; margin-bottom: 5px;"></h2>
-            <p id="view-profile-about" style="color: #667781; font-size: 15px; margin-bottom: 20px;"></p>
+            <p id="view-profile-about" style="color: #667781; font-size: 15px; margin-bottom: 8px;"></p>
+            
+            <p id="view-profile-last-seen" style="font-size: 14px; font-weight: 600; margin-bottom: 25px;"></p>
+            
             <button class="primary-btn" onclick="document.getElementById('view-profile-modal').classList.add('hidden')">Close</button>
         </div>
     </div>
@@ -110,21 +113,11 @@
     <div id="message-options-modal" class="modal hidden">
         <div class="modal-content menu-list">
             <div class="modal-drag-pill"></div>
-            <button id="opt-reply" class="menu-btn">
-                <span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;">↩️</span> Reply
-            </button>
-            <button id="opt-like" class="menu-btn">
-                <span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">❤️</span> Like
-            </button>
-            <button id="opt-pin" class="menu-btn">
-                <span class="menu-icon" style="background: rgba(255, 179, 0, 0.15); color: #ffb300;">📌</span> Pin
-            </button>
-            <button id="opt-edit" class="menu-btn hidden">
-                <span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: #00a884;">✏️</span> Edit
-            </button>
-            <button id="opt-delete" class="menu-btn danger">
-                <span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Delete
-            </button>
+            <button id="opt-reply" class="menu-btn"><span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;">↩️</span> Reply</button>
+            <button id="opt-like" class="menu-btn"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">❤️</span> Like</button>
+            <button id="opt-pin" class="menu-btn"><span class="menu-icon" style="background: rgba(255, 179, 0, 0.15); color: #ffb300;">📌</span> Pin</button>
+            <button id="opt-edit" class="menu-btn hidden"><span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: #00a884;">✏️</span> Edit</button>
+            <button id="opt-delete" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Delete</button>
         </div>
     </div>
 
@@ -132,23 +125,16 @@
         <div class="modal-content form-modal">
             <div class="modal-drag-pill"></div>
             <h3>New Room</h3>
-            
             <div style="margin-top: 15px; margin-bottom: 10px;">
                 <input type="text" id="new-room-name" class="premium-input" placeholder="Room Name" autocomplete="nope">
             </div>
-
             <label class="premium-toggle">
                 <span>Private (Needs Password)</span>
-                <div class="switch">
-                    <input type="checkbox" id="new-room-private">
-                    <span class="slider"></span>
-                </div>
+                <div class="switch"><input type="checkbox" id="new-room-private"><span class="slider"></span></div>
             </label>
-
             <div class="hidden" id="password-input-container" style="margin-bottom: 10px;">
                 <input type="text" id="new-room-pass" class="premium-input" placeholder="Password" autocomplete="nope">
             </div>
-
             <button id="create-room-submit" class="primary-btn" style="margin-top: 15px;">Create</button>
         </div>
     </div>
@@ -158,9 +144,7 @@
             <div class="modal-drag-pill"></div>
             <h3>Private Room</h3>
             <p class="modal-subtitle" style="margin-bottom: 15px;">This room requires a password</p>
-
             <input type="text" id="join-room-pass" class="premium-input" placeholder="Enter Password" autocomplete="nope" style="margin-bottom: 15px;">
-            
             <button id="join-room-submit" class="primary-btn">Join Room</button>
         </div>
     </div>
