@@ -10,6 +10,11 @@
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
 </head>
 <body>
+    <div id="lightbox" class="hidden">
+        <span id="lightbox-close">✖</span>
+        <img id="lightbox-img" src="">
+    </div>
+
     <div id="login-screen">
         <h2>Chit Chat Lobby 😸</h2>
         <form id="login-form">
@@ -21,9 +26,7 @@
     <div id="chat-container" class="hidden">
         <div id="header">
             <span>Lobby 😸</span>
-            
             <input type="text" id="search-input" placeholder="🔍 Search..." autocomplete="off" />
-
             <div>
                 <button id="theme-toggle" style="background: none; border: none; font-size: 20px; cursor: pointer; margin-right: 10px;">🌙</button>
                 <button id="clear-btn" style="background: none; border: none; font-size: 20px; cursor: pointer;">🗑️</button>
@@ -37,7 +40,13 @@
 
         <div id="active-users">Online: <span id="user-list"></span></div>
         <ul id="messages"></ul>
-        <div id="typing-indicator"></div>
+        
+        <div id="typing-indicator" class="hidden">
+            <div class="typing-bubble">
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            </div>
+            <span id="typing-user"></span>
+        </div>
         
         <emoji-picker id="emoji-picker" class="hidden"></emoji-picker>
 
