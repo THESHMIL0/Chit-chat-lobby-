@@ -23,22 +23,24 @@ body { background-color: #e5ddd5; display: flex; justify-content: center; align-
 .sender-name { font-size: 12px; font-weight: bold; margin-bottom: 3px; }
 .timestamp { font-size: 10px; color: #888; align-self: flex-end; margin-top: 4px; display: flex; align-items: center; gap: 5px; }
 
-/* 🌟 NEW: Styling for Private Messages, Audio, and Likes */
 .private-message { background-color: #ebd4fb !important; border: 1px solid #c998f5; }
 .chat-audio { max-width: 200px; height: 35px; margin-top: 5px; outline: none; }
 .like-btn { background: rgba(255,255,255,0.7); border: 1px solid #ddd; border-radius: 10px; padding: 2px 5px; font-size: 10px; cursor: pointer; transition: transform 0.1s; }
 .like-btn:active { transform: scale(1.2); }
 .mic-recording { animation: pulse 1s infinite alternate; color: red; }
 
+/* 🌟 NEW: Styling for Read Receipts! */
+.ticks { font-size: 11px; margin-left: 3px; font-weight: bold; }
+.ticks.delivered { color: #888; }
+.ticks.read { color: #34b7f1; } 
+
 #typing-indicator { padding: 0 20px 10px 20px; font-size: 12px; color: #888; font-style: italic; height: 20px; }
 #chat-form { background-color: #f0f0f0; padding: 10px; display: flex; gap: 8px; align-items: center; transition: background-color 0.3s; width: 100%; }
 #input { flex-grow: 1; border: none; padding: 12px 15px; border-radius: 20px; font-size: 16px; outline: none; transition: background-color 0.3s, color 0.3s; min-width: 0; }
 #chat-form button { flex-shrink: 0; }
 #send-btn { background-color: #128c7e; color: white; border: none; padding: 10px 18px; border-radius: 20px; font-size: 16px; font-weight: bold; cursor: pointer; }
-
 .system-message { align-self: center !important; background-color: transparent !important; color: #555; font-size: 12px; font-style: italic; padding: 5px; box-shadow: none !important; max-width: 100%; pointer-events: none; }
 .chat-image { max-width: 100%; border-radius: 8px; margin-top: 8px; display: block; }
-
 @keyframes popIn { 0% { opacity: 0; transform: translateY(15px) scale(0.95); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.3); } }
 
