@@ -1,6 +1,4 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-
-/* 🌟 FIX: Added 100dvh and position: fixed to lock the UI perfectly on mobile! */
 body { background-color: #e5ddd5; display: flex; justify-content: center; align-items: center; height: 100dvh; width: 100vw; position: fixed; top: 0; left: 0; overflow: hidden; transition: background-color 0.3s; }
 .hidden { display: none !important; }
 
@@ -35,6 +33,11 @@ body { background-color: #e5ddd5; display: flex; justify-content: center; align-
 .ticks.delivered { color: #888; }
 .ticks.read { color: #34b7f1; } 
 
+/* 🌟 NEW: Styling for Delete Button and Text */
+.msg-delete-btn { background: none; border: none; font-size: 12px; cursor: pointer; opacity: 0.5; margin-left: 5px; }
+.msg-delete-btn:hover { opacity: 1; }
+.deleted-text { font-style: italic; color: #888; font-size: 14px; }
+
 #typing-indicator { padding: 0 20px 10px 20px; font-size: 12px; color: #888; font-style: italic; height: 20px; }
 #chat-form { background-color: #f0f0f0; padding: 10px; display: flex; gap: 8px; align-items: center; transition: background-color 0.3s; width: 100%; }
 #input { flex-grow: 1; border: none; padding: 12px 15px; border-radius: 20px; font-size: 16px; outline: none; transition: background-color 0.3s, color 0.3s; min-width: 0; }
@@ -63,3 +66,4 @@ body.dark-mode .other-message { background-color: #202c33; color: #e0e0e0; }
 body.dark-mode .my-message { background-color: #005c4b; color: #e0e0e0; }
 body.dark-mode .private-message { background-color: #4a2b66 !important; border-color: #6d4298; }
 body.dark-mode .like-btn { background: rgba(0,0,0,0.5); border-color: #444; color: white; }
+body.dark-mode .deleted-text { color: #999; }
