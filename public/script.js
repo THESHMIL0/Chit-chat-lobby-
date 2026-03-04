@@ -10,6 +10,7 @@ const input = document.getElementById('input');
 const messages = document.getElementById('messages');
 const userListSpan = document.getElementById('user-list');
 const typingIndicator = document.getElementById('typing-indicator');
+const typingUserSpan = document.getElementById('typing-user');
 const clearBtn = document.getElementById('clear-btn');
 const themeToggle = document.getElementById('theme-toggle');
 const emojiBtn = document.getElementById('emoji-btn');
@@ -26,21 +27,25 @@ const pinnedUser = document.getElementById('pinned-user');
 const pinnedText = document.getElementById('pinned-text'); 
 const unpinBtn = document.getElementById('unpin-btn'); 
 
+// 🌟 NEW: Lightbox Elements
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+
 const notifySound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
 
 let username = ""; let userColor = ""; let avatarUrl = ""; let replyingTo = null; 
+
+// Lightbox Logic
+lightbox.addEventListener('click', () => lightbox.classList.add('hidden'));
 
 searchInput.addEventListener('input', (e) => {
     const searchTerm = e.target.value.toLowerCase();
     Array.from(messages.children).forEach(msg => {
         if (msg.classList.contains('system-message')) return;
         const text = msg.querySelector('.message-text')?.innerText.toLowerCase() || "";
-        const sender = msg.querySelector('.sender-name')?.innerText.toLowerCase() || "";
-        if (text.includes(searchTerm) || sender.includes(searchTerm)) {
-            msg.style.display = 'flex';
-        } else {
-            msg.style.display = 'none';
-        }
+        const sender = msg.getAttribute('data-sender')?.toLowerCase() || "";
+        if (text.includes(searchTerm) || sender.includes(searchTerm)) msg.style.display = 'flex';
+        else msg.style.display = 'none';
     });
 });
 
@@ -57,7 +62,6 @@ socket.on('pinned updated', (pinnedMsg) => {
 });
 
 attachBtn.addEventListener('click', () => imageUpload.click());
-
 imageUpload.addEventListener('change', function() {
     const file = this.files[0];
     if (file) {
@@ -96,7 +100,7 @@ navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
             replyingTo = null; replyPreviewContainer.classList.add('hidden');
         };
     };
-}).catch(err => console.log("Mic access denied or missing"));
+}).catch(() => console.log("Mic access denied"));
 
 function startRecording(e) { e.preventDefault(); if (mediaRecorder && mediaRecorder.state === 'inactive') { mediaRecorder.start(); micBtn.classList.add('mic-recording'); } }
 function stopRecording(e) { e.preventDefault(); if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); micBtn.classList.remove('mic-recording'); } }
@@ -115,30 +119,86 @@ themeToggle.addEventListener('click', () => { document.body.classList.toggle('da
 emojiBtn.addEventListener('click', () => { emojiPicker.classList.toggle('hidden'); });
 emojiPicker.addEventListener('emoji-click', event => { input.value += event.detail.unicode; emojiPicker.classList.add('hidden'); input.focus(); });
 
+// 🌟 NEW: Swipe and Double-Tap Logic!
+let touchStartX = 0;
+let touchStartY = 0;
+let touchElem = null;
+let lastTapTime = 0;
+
+messages.addEventListener('touchstart', (e) => {
+    const li = e.target.closest('li.my-message, li.other-message');
+    if (!li) return;
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+    touchElem = li;
+    li.style.transition = 'none'; // Disable snapping so it drags smoothly
+}, { passive: true });
+
+messages.addEventListener('touchmove', (e) => {
+    if (!touchElem) return;
+    const touchX = e.changedTouches[0].screenX;
+    const touchY = e.changedTouches[0].screenY;
+    const deltaX = touchX - touchStartX;
+    const deltaY = Math.abs(touchY - touchStartY);
+
+    // If they swipe right, slide the message!
+    if (deltaX > 0 && deltaX > deltaY) {
+        if (e.cancelable) e.preventDefault(); 
+        touchElem.style.transform = `translateX(${Math.min(deltaX, 80)}px)`;
+    }
+}, { passive: false });
+
+messages.addEventListener('touchend', (e) => {
+    if (!touchElem) return;
+    const touchX = e.changedTouches[0].screenX;
+    const deltaX = touchX - touchStartX;
+
+    // Snap the message back into place
+    touchElem.style.transition = 'transform 0.3s ease-out';
+    touchElem.style.transform = 'translateX(0)';
+
+    // 🌟 SWIPE TO REPLY
+    if (deltaX > 50) {
+        const sender = touchElem.getAttribute('data-sender');
+        const textElement = touchElem.querySelector('.message-text');
+        const text = textElement ? textElement.innerText : (touchElem.querySelector('.chat-audio') ? "🎙️ Voice Message" : "🖼️ Image"); 
+        replyingTo = { user: sender, text: text };
+        replyPreviewText.innerHTML = `<strong>Replying to ${escapeHTML(sender)}</strong><br>${escapeHTML(text).substring(0, 40)}...`;
+        replyPreviewContainer.classList.remove('hidden'); input.focus(); 
+    }
+
+    // 🌟 DOUBLE-TAP TO LIKE
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTapTime;
+    if (tapLength < 300 && tapLength > 0) {
+        const msgId = touchElem.id.replace('msg-', '');
+        socket.emit('like message', msgId);
+    }
+    lastTapTime = currentTime;
+    touchElem = null;
+});
+
+// Standard Clicks (Delete, Pin, Image Zoom)
 messages.addEventListener('click', (e) => {
+    // Open image in Lightbox
+    if (e.target.classList.contains('chat-image')) {
+        lightboxImg.src = e.target.src;
+        lightbox.classList.remove('hidden');
+        return;
+    }
+
     if (e.target.closest('.msg-delete-btn')) {
         if (confirm("Delete this message for everyone?")) socket.emit('delete message', e.target.closest('.msg-delete-btn').dataset.id);
         return; 
     }
     if (e.target.closest('.msg-pin-btn')) {
         const li = e.target.closest('li');
-        const sender = li.querySelector('.sender-name').textContent;
+        const sender = li.getAttribute('data-sender');
         const text = li.querySelector('.message-text') ? li.querySelector('.message-text').innerText : "Attachment";
         socket.emit('pin message', { id: e.target.closest('.msg-pin-btn').dataset.id, user: sender, text: text });
         return;
     }
-
     if (e.target.closest('.like-btn')) { socket.emit('like message', e.target.closest('.like-btn').dataset.id); return; }
-    
-    const li = e.target.closest('li');
-    if (!li || li.classList.contains('system-message')) return;
-    const sender = li.querySelector('.sender-name').textContent;
-    const textElement = li.querySelector('.message-text');
-    const text = textElement ? textElement.innerText : (li.querySelector('.chat-audio') ? "🎙️ Voice Message" : "🖼️ Image"); 
-
-    replyingTo = { user: sender, text: text };
-    replyPreviewText.innerHTML = `<strong>Replying to ${escapeHTML(sender)}</strong><br>${escapeHTML(text).substring(0, 40)}...`;
-    replyPreviewContainer.classList.remove('hidden'); input.focus(); 
 });
 
 cancelReplyBtn.addEventListener('click', () => { replyingTo = null; replyPreviewContainer.classList.add('hidden'); });
@@ -187,7 +247,18 @@ chatForm.addEventListener('submit', (e) => {
 });
 
 socket.on('user list', (users) => { userListSpan.textContent = users.join(', '); });
-socket.on('typing', (data) => { typingIndicator.textContent = data.isTyping ? `${data.user} is typing...` : ''; });
+
+// 🌟 NEW: Animated Typing Bubble Trigger
+socket.on('typing', (data) => { 
+    if (data.isTyping) {
+        typingIndicator.classList.remove('hidden');
+        typingUserSpan.textContent = `${data.user} is typing...`;
+        messages.scrollTop = messages.scrollHeight;
+    } else {
+        typingIndicator.classList.add('hidden');
+    }
+});
+
 socket.on('update likes', (data) => { const likeSpan = document.getElementById(`like-count-${data.id}`); if (likeSpan) likeSpan.textContent = data.likes > 0 ? data.likes : ''; });
 
 socket.on('message deleted', (msgId) => {
@@ -203,29 +274,35 @@ socket.on('message deleted', (msgId) => {
 
 function displayMessage(data, isHistory = false) {
     const item = document.createElement('li'); item.id = `msg-${data.id}`; 
+    item.setAttribute('data-sender', data.user); // Save sender for logic
+    
     if (data.type === 'system') { item.classList.add('system-message'); item.textContent = data.text; messages.appendChild(item); messages.scrollTop = messages.scrollHeight; return; }
 
     const isMe = data.user === username;
     
-    // 🌟 THE FIX: Wrapped the Notification code in a safe try...catch block
     if (!isMe && !isHistory) {
         notifySound.play().catch(() => {});
         if (!document.hasFocus() && "Notification" in window && Notification.permission === "granted") {
             try {
                 if (navigator.serviceWorker && navigator.serviceWorker.ready) {
-                    navigator.serviceWorker.ready.then(function(registration) {
-                        registration.showNotification(`New message from ${data.user}`, { body: data.text || "Sent an attachment" });
-                    }).catch(() => {});
-                } else {
-                    new Notification(`New message from ${data.user}`, { body: data.text || "Sent an attachment" });
-                }
-            } catch (err) {
-                console.log("Silent notification failure:", err);
-            }
+                    navigator.serviceWorker.ready.then(function(reg) { reg.showNotification(`New message from ${data.user}`, { body: data.text || "Sent an attachment" }); }).catch(() => {});
+                } else { new Notification(`New message from ${data.user}`, { body: data.text || "Sent an attachment" }); }
+            } catch (err) { console.log("Silent notification failure"); }
+        }
+    }
+
+    // 🌟 NEW: Message Stacking Logic!
+    const lastMessage = messages.lastElementChild;
+    let isStacked = false;
+    if (lastMessage && !lastMessage.classList.contains('system-message')) {
+        const lastSenderName = lastMessage.getAttribute('data-sender');
+        if (lastSenderName === data.user && lastMessage.classList.contains('my-message') === isMe) {
+            isStacked = true;
         }
     }
 
     item.classList.add(isMe ? 'my-message' : 'other-message');
+    if (isStacked) item.classList.add('stacked'); // Hide avatar and squish together
     if (data.type === 'private') item.classList.add('private-message');
     
     let contentHTML = '';
