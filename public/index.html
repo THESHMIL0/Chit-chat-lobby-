@@ -9,17 +9,24 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="lightbox" class="hidden"><span id="lightbox-close">✖</span><img id="lightbox-img" src=""></div>
+    <div id="lightbox" class="hidden">
+        <div id="lightbox-close-area">
+            <span id="lightbox-close">✖</span>
+        </div>
+        <img id="lightbox-img" src="">
+    </div>
 
     <div id="login-screen" class="screen">
-        <h2>Welcome 😸</h2>
-        <div id="avatar-preview-container" onclick="document.getElementById('profile-pic-upload').click()">
-            <img id="avatar-preview" src="https://api.dicebear.com/7.x/bottts/svg?seed=guest" alt="Avatar">
-            <div class="edit-icon">📷</div>
+        <div class="login-card">
+            <h2>Welcome 😸</h2>
+            <div id="avatar-preview-container" onclick="document.getElementById('profile-pic-upload').click()">
+                <img id="avatar-preview" src="https://api.dicebear.com/7.x/bottts/svg?seed=guest" alt="Avatar">
+                <div class="edit-icon">📷</div>
+            </div>
+            <input type="file" id="profile-pic-upload" accept="image/*" class="hidden" />
+            <input type="text" id="username-input" placeholder="Enter your name..." autocomplete="nope" required />
+            <button id="login-btn">Continue</button>
         </div>
-        <input type="file" id="profile-pic-upload" accept="image/*" class="hidden" />
-        <input type="text" id="username-input" placeholder="Enter your name..." autocomplete="nope" required />
-        <button id="login-btn">Continue</button>
     </div>
 
     <div id="room-list-screen" class="screen hidden">
@@ -37,23 +44,23 @@
         <div class="app-header" id="chat-header" onclick="document.getElementById('group-pic-upload').click()">
             <button id="back-btn" class="icon-btn" style="margin-right:10px;">⬅</button>
             <img id="current-room-logo" src="" class="header-avatar">
-            <div style="display:flex; flex-direction:column; flex-grow:1; margin-left:10px;">
-                <span id="current-room-name" style="font-size:16px;"></span>
-                <span style="font-size:11px; opacity:0.8; font-weight:normal;">Tap to change info</span>
+            <div class="header-text-container">
+                <span id="current-room-name"></span>
+                <span class="header-subtitle">Tap to change info</span>
             </div>
         </div>
         <input type="file" id="group-pic-upload" accept="image/*" class="hidden" />
         
         <div id="pinned-banner" class="hidden">
             <div>📌 <b id="pinned-user"></b>: <span id="pinned-text"></span></div>
-            <button id="unpin-btn">❌</button>
+            <button id="unpin-btn">✖</button>
         </div>
 
         <ul id="messages"></ul>
 
         <div id="reply-preview-container" class="hidden">
             <div id="reply-preview-text"></div>
-            <button type="button" id="cancel-reply-btn">❌</button>
+            <button type="button" id="cancel-reply-btn">✖</button>
         </div>
 
         <div id="chat-footer-controls">
@@ -69,31 +76,31 @@
 
     <div id="message-options-modal" class="modal hidden">
         <div class="modal-content">
+            <div class="modal-drag-pill"></div>
             <button id="opt-reply">↩️ Reply</button>
             <button id="opt-like">❤️ Like</button>
             <button id="opt-pin">📌 Pin</button>
             <button id="opt-delete" class="danger">🗑️ Delete</button>
-            <button id="opt-cancel">Cancel</button>
         </div>
     </div>
 
     <div id="create-room-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>New Room</h3>
+            <div class="modal-drag-pill"></div>
+            <h3 style="margin-bottom: 10px; text-align: center;">New Room</h3>
             <input type="text" id="new-room-name" placeholder="Room Name" autocomplete="nope">
-            <label><input type="checkbox" id="new-room-private"> Private (Needs Password)</label>
+            <label class="checkbox-label"><input type="checkbox" id="new-room-private"> Private (Needs Password)</label>
             <input type="text" id="new-room-pass" class="hidden" placeholder="Password" autocomplete="nope">
             <button id="create-room-submit">Create</button>
-            <button onclick="document.getElementById('create-room-modal').classList.add('hidden')">Cancel</button>
         </div>
     </div>
 
     <div id="password-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>Private Room</h3>
+            <div class="modal-drag-pill"></div>
+            <h3 style="margin-bottom: 10px; text-align: center;">Private Room</h3>
             <input type="text" id="join-room-pass" placeholder="Enter Password" autocomplete="nope">
             <button id="join-room-submit">Join</button>
-            <button onclick="document.getElementById('password-modal').classList.add('hidden')">Cancel</button>
         </div>
     </div>
 
