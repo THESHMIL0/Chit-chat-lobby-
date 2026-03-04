@@ -17,8 +17,8 @@
 
     <div id="login-screen">
         <h2>Chit Chat Lobby 😸</h2>
-        <form id="login-form" autocomplete="off" role="presentation">
-            <input type="text" id="username-input" autocomplete="nope" placeholder="Enter your name..." required />
+        <form id="login-form">
+            <input type="text" id="username-input" placeholder="Enter your name..." required autocomplete="off" />
             <button type="submit" id="join-btn">Join Chat</button>
         </form>
     </div>
@@ -26,7 +26,7 @@
     <div id="chat-container" class="hidden">
         <div id="header">
             <span>Lobby 😸</span>
-            <input type="text" id="search-input" autocomplete="nope" placeholder="🔍 Search..." />
+            <input type="text" id="search-input" placeholder="🔍 Search..." autocomplete="off" spellcheck="false" />
             <div>
                 <button id="theme-toggle" style="background: none; border: none; font-size: 20px; cursor: pointer; margin-right: 10px;">🌙</button>
                 <button id="clear-btn" style="background: none; border: none; font-size: 20px; cursor: pointer;">🗑️</button>
@@ -55,15 +55,15 @@
             <button type="button" id="cancel-reply-btn">❌</button>
         </div>
 
-        <form id="chat-form" autocomplete="off" role="presentation">
+        <div id="chat-footer-controls">
             <button type="button" id="emoji-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">😀</button>
             <button type="button" id="attach-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">📎</button>
             <input type="file" id="image-upload" accept="image/*" style="display: none;" />
             <button type="button" id="mic-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">🎤</button>
             
-            <input id="chat-msg-box" type="text" autocomplete="nope" autocorrect="on" data-lpignore="true" placeholder="Type a message..." required />
+            <input id="the-chat-box" type="text" inputmode="text" autocomplete="off" spellcheck="false" data-lpignore="true" placeholder="Type a message..." />
             <button id="send-btn">Send</button>
-        </form>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
