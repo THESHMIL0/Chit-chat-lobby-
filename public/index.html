@@ -7,6 +7,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#008069">
     <link rel="stylesheet" href="style.css">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
 </head>
 <body>
     <div id="lightbox" class="hidden">
@@ -22,7 +23,7 @@
                 <div class="edit-icon">📷</div>
             </div>
             <input type="file" id="profile-pic-upload" accept="image/*" class="hidden" />
-            <input type="text" id="username-input" placeholder="Enter your name..." autocomplete="nope" required />
+            <input type="text" id="username-input" class="premium-input" placeholder="Enter your name..." autocomplete="nope" required />
             <button id="login-btn">Continue</button>
         </div>
     </div>
@@ -51,11 +52,11 @@
             </div>
             <div class="profile-input-group">
                 <label>Name</label>
-                <input type="text" id="settings-username" autocomplete="nope" />
+                <input type="text" id="settings-username" class="premium-input" autocomplete="nope" />
             </div>
             <div class="profile-input-group">
                 <label>About</label>
-                <input type="text" id="settings-about" autocomplete="nope" placeholder="Hey there! I am using Chit Chat." />
+                <input type="text" id="settings-about" class="premium-input" autocomplete="nope" placeholder="Hey there! I am using Chit Chat." />
             </div>
             <button id="save-profile-btn">Save Profile</button>
         </div>
@@ -109,32 +110,46 @@
     <div id="message-options-modal" class="modal hidden">
         <div class="modal-content menu-list">
             <div class="modal-drag-pill"></div>
-            <button id="opt-reply">↩️ Reply</button>
-            <button id="opt-like">❤️ Like</button>
-            <button id="opt-pin">📌 Pin</button>
-            <button id="opt-edit" class="hidden">✏️ Edit</button>
-            <button id="opt-delete" class="danger">🗑️ Delete</button>
+            <button id="opt-reply" class="menu-btn">
+                <span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;">↩️</span> Reply
+            </button>
+            <button id="opt-like" class="menu-btn">
+                <span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">❤️</span> Like
+            </button>
+            <button id="opt-pin" class="menu-btn">
+                <span class="menu-icon" style="background: rgba(255, 179, 0, 0.15); color: #ffb300;">📌</span> Pin
+            </button>
+            <button id="opt-edit" class="menu-btn hidden">
+                <span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: #00a884;">✏️</span> Edit
+            </button>
+            <button id="opt-delete" class="menu-btn danger">
+                <span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Delete
+            </button>
         </div>
     </div>
 
     <div id="create-room-modal" class="modal hidden">
         <div class="modal-content form-modal">
             <div class="modal-drag-pill"></div>
-            <h3>Create New Room</h3>
-            <p class="modal-subtitle">Start a new conversation space</p>
-            <div class="input-with-icon">
-                <span class="input-icon">🏷️</span>
-                <input type="text" id="new-room-name" placeholder="Room Name" autocomplete="nope">
+            <h3>New Room</h3>
+            
+            <div style="margin-top: 15px; margin-bottom: 10px;">
+                <input type="text" id="new-room-name" class="premium-input" placeholder="Room Name" autocomplete="nope">
             </div>
-            <div class="toggle-container">
-                <div class="toggle-text"><span class="toggle-title">Private Room</span><span class="toggle-desc">Require a password to join</span></div>
-                <label class="switch"><input type="checkbox" id="new-room-private"><span class="slider round"></span></label>
+
+            <label class="premium-toggle">
+                <span>Private (Needs Password)</span>
+                <div class="switch">
+                    <input type="checkbox" id="new-room-private">
+                    <span class="slider"></span>
+                </div>
+            </label>
+
+            <div class="hidden" id="password-input-container" style="margin-bottom: 10px;">
+                <input type="text" id="new-room-pass" class="premium-input" placeholder="Password" autocomplete="nope">
             </div>
-            <div class="input-with-icon hidden" id="password-input-container">
-                <span class="input-icon">🔒</span>
-                <input type="text" id="new-room-pass" placeholder="Set a Password" autocomplete="nope">
-            </div>
-            <button id="create-room-submit" class="primary-btn">Create Room</button>
+
+            <button id="create-room-submit" class="primary-btn" style="margin-top: 15px;">Create</button>
         </div>
     </div>
 
@@ -142,11 +157,10 @@
         <div class="modal-content form-modal">
             <div class="modal-drag-pill"></div>
             <h3>Private Room</h3>
-            <p class="modal-subtitle">This room requires a password</p>
-            <div class="input-with-icon">
-                <span class="input-icon">🔑</span>
-                <input type="text" id="join-room-pass" placeholder="Enter Password" autocomplete="nope">
-            </div>
+            <p class="modal-subtitle" style="margin-bottom: 15px;">This room requires a password</p>
+
+            <input type="text" id="join-room-pass" class="premium-input" placeholder="Enter Password" autocomplete="nope" style="margin-bottom: 15px;">
+            
             <button id="join-room-submit" class="primary-btn">Join Room</button>
         </div>
     </div>
