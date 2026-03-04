@@ -39,8 +39,12 @@
         </div>
 
         <form id="chat-form" action="">
-            <button type="button" id="emoji-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 0 5px;">😀</button>
-            <button type="button" id="mic-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 0 5px;">🎤</button>
+            <button type="button" id="emoji-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">😀</button>
+            
+            <button type="button" id="attach-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">📎</button>
+            <input type="file" id="image-upload" accept="image/*" style="display: none;" />
+
+            <button type="button" id="mic-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">🎤</button>
             
             <input id="input" autocomplete="off" placeholder="Type a message..." required />
             <button id="send-btn">Send</button>
