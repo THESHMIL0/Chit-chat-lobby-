@@ -15,8 +15,8 @@ const themeToggle = document.getElementById('theme-toggle');
 const emojiBtn = document.getElementById('emoji-btn');
 const emojiPicker = document.getElementById('emoji-picker');
 const micBtn = document.getElementById('mic-btn'); 
-const attachBtn = document.getElementById('attach-btn'); // 🌟 NEW
-const imageUpload = document.getElementById('image-upload'); // 🌟 NEW
+const attachBtn = document.getElementById('attach-btn'); 
+const imageUpload = document.getElementById('image-upload'); 
 const replyPreviewContainer = document.getElementById('reply-preview-container');
 const replyPreviewText = document.getElementById('reply-preview-text');
 const cancelReplyBtn = document.getElementById('cancel-reply-btn');
@@ -24,29 +24,54 @@ const notifySound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/
 
 let username = ""; let userColor = ""; let avatarUrl = ""; let replyingTo = null; 
 
-// 🌟 NEW: Image Upload Logic
 attachBtn.addEventListener('click', () => imageUpload.click());
 
+// 🌟 FIX: Auto-compressing images instead of showing an error!
 imageUpload.addEventListener('change', function() {
     const file = this.files[0];
     if (file) {
-        if (file.size > 2 * 1024 * 1024) { alert("Please choose an image smaller than 2MB!"); return; }
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => {
-            socket.emit('chat message', {
-                user: username, text: '', 
-                uploadedImage: reader.result, // Send the Base64 image
-                color: userColor, avatar: avatarUrl,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                replyTo: replyingTo
-            });
-            replyingTo = null; replyPreviewContainer.classList.add('hidden'); emojiPicker.classList.add('hidden');
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            
+            img.onload = () => {
+                // Create a canvas to resize the image
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const MAX_WIDTH = 600; // Shrink it down so it fits nicely and sends fast
+                
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Compress into a high-quality JPEG
+                const compressedImage = canvas.toDataURL('image/jpeg', 0.8);
+
+                socket.emit('chat message', {
+                    user: username, text: '', 
+                    uploadedImage: compressedImage, // Send the squished image!
+                    color: userColor, avatar: avatarUrl,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    replyTo: replyingTo
+                });
+                replyingTo = null; replyPreviewContainer.classList.add('hidden'); emojiPicker.classList.add('hidden');
+                
+                // Reset the file input so you can send the same image again later if you want
+                imageUpload.value = ''; 
+            };
         };
     }
 });
 
-// Voice Recorder
 let mediaRecorder; let audioChunks = [];
 navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
     mediaRecorder = new MediaRecorder(stream);
@@ -73,13 +98,11 @@ micBtn.addEventListener('mousedown', startRecording); micBtn.addEventListener('m
 micBtn.addEventListener('mouseleave', stopRecording); micBtn.addEventListener('touchstart', startRecording);
 micBtn.addEventListener('touchend', stopRecording);
 
-// 🌟 NEW: Read Receipts Focus Tracking
 window.addEventListener('focus', () => {
-    if (username) socket.emit('mark read'); // Tell server we are looking at the app
+    if (username) socket.emit('mark read'); 
 });
 
 socket.on('messages read', () => {
-    // Turn all gray ticks blue!
     document.querySelectorAll('.ticks.delivered').forEach(el => {
         el.classList.remove('delivered');
         el.classList.add('read');
@@ -120,7 +143,7 @@ loginForm.addEventListener('submit', (e) => {
         loginScreen.classList.add('hidden'); chatContainer.classList.remove('hidden');
         if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
         socket.emit('new user', username);
-        setTimeout(() => socket.emit('mark read'), 500); // Trigger read on login
+        setTimeout(() => socket.emit('mark read'), 500); 
     }
 });
 
@@ -185,7 +208,6 @@ function displayMessage(data, isHistory = false) {
     
     let contentHTML = '';
     
-    // 🌟 NEW: Check for uploaded images!
     if (data.uploadedImage) {
         contentHTML = `<img src="${data.uploadedImage}" class="chat-image" alt="Uploaded image">`;
     } else if (data.audio) {
@@ -204,7 +226,6 @@ function displayMessage(data, isHistory = false) {
         replyHTML = `<div class="replied-to"><div class="replied-to-user">${escapeHTML(data.replyTo.user)}</div><div class="replied-to-text">${escapeHTML(data.replyTo.text).substring(0, 40)}...</div></div>`;
     }
 
-    // 🌟 NEW: Render the Ticks if you are the sender!
     let ticksHTML = '';
     if (isMe && data.type !== 'private') {
         const tickClass = data.status === 'read' ? 'read' : 'delivered';
@@ -235,5 +256,5 @@ socket.on('chat history', (historyArray) => { historyArray.forEach(msg => displa
 
 socket.on('chat message', (data) => { 
     displayMessage(data, false); 
-    if (document.hasFocus()) socket.emit('mark read'); // Tell server we instantly read it!
+    if (document.hasFocus()) socket.emit('mark read'); 
 });
