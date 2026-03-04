@@ -22,6 +22,10 @@ db.serialize(() => {
 
 const activeUsersById = {}; 
 
+function getUsersInRoom(roomId) {
+    return Object.values(activeUsersById).filter(u => u.roomId === roomId).map(u => u.name);
+}
+
 io.on('connection', (socket) => {
     
     socket.emit('room list', Object.values(rooms).map(r => ({ id: r.id, name: r.name, logo: r.logo, isPrivate: r.isPrivate })));
@@ -37,23 +41,28 @@ io.on('connection', (socket) => {
         if (!room) return socket.emit('error', 'Room not found');
         if (room.isPrivate && room.password !== data.password) return socket.emit('join error', 'Incorrect Password');
 
+        // Leave old rooms
+        const oldRoomId = activeUsersById[socket.id]?.roomId;
         Array.from(socket.rooms).forEach(r => { if(r !== socket.id) socket.leave(r); });
         
-        socket.join(room.id);
-        const user = data.user;
-        activeUsersById[socket.id] = { ...user, roomId: room.id };
+        if (oldRoomId) io.to(oldRoomId).emit('room users', getUsersInRoom(oldRoomId)); // Update old room
 
-        // Load history to catch them up if they disconnected
+        socket.join(room.id);
+        activeUsersById[socket.id] = { ...data.user, roomId: room.id };
+
+        // Load history 
         db.all("SELECT data FROM history WHERE roomId = ? ORDER BY timestamp ASC LIMIT 50", [room.id], (err, rows) => {
             const history = rows ? rows.map(row => JSON.parse(row.data)) : [];
             socket.emit('chat history', { room: room, history: history });
             
-            // 🌟 THE FIX: If this is an auto-reconnect, don't spam the chat with "joined"!
             if (!data.isReconnect) {
-                const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚀 ${user.name} joined the group` };
+                const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚀 ${data.user.name} joined the group` };
                 db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [sysMsg.id, room.id, Date.now(), JSON.stringify(sysMsg)]);
                 io.to(room.id).emit('chat message', sysMsg);
             }
+            
+            // 🌟 NEW: Tell everyone in the room who is currently online!
+            io.to(room.id).emit('room users', getUsersInRoom(room.id));
         });
     });
 
@@ -68,12 +77,35 @@ io.on('connection', (socket) => {
 
     socket.on('chat message', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
-        if(!roomId) return; // If they lost memory, block the message
+        if(!roomId) return; 
         data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
         data.type = 'chat'; data.likes = 0; data.status = 'delivered';
         
-        db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [data.id, roomId, Date.now(), JSON.stringify(data)]);
+        // 🌟 NEW: Ghost Mode (Don't save to DB if it's a ghost message!)
+        if (!data.isGhost) {
+            db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [data.id, roomId, Date.now(), JSON.stringify(data)]);
+        }
+        
         io.to(roomId).emit('chat message', data);
+        // 🌟 NEW: Send a global alert for unread badges!
+        socket.broadcast.emit('global room alert', roomId);
+    });
+
+    // 🌟 NEW: Edit Message Logic
+    socket.on('edit message', (data) => {
+        const roomId = activeUsersById[socket.id]?.roomId;
+        if(!roomId) return;
+        db.get("SELECT data FROM history WHERE id = ?", [data.msgId], (err, row) => {
+            if (row) {
+                const msg = JSON.parse(row.data);
+                if (msg.user === activeUsersById[socket.id].name) {
+                    msg.text = data.newText;
+                    msg.isEdited = true;
+                    db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), data.msgId]);
+                    io.to(roomId).emit('message edited', { id: data.msgId, newText: data.newText });
+                }
+            }
+        });
     });
 
     socket.on('like message', (msgId) => {
@@ -117,9 +149,9 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         const userData = activeUsersById[socket.id];
-        // We only announce they left if they don't reconnect within a few seconds (optional, keeping it simple for now)
         if (userData && userData.roomId) {
             delete activeUsersById[socket.id];
+            io.to(userData.roomId).emit('room users', getUsersInRoom(userData.roomId));
         }
     });
 });
