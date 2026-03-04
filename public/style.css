@@ -13,10 +13,10 @@ input { -webkit-user-select: auto; user-select: auto; }
 #avatar-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .edit-icon { position: absolute; bottom: 0; right: 0; background: #00a884; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; font-size: 18px; border: 3px solid white; }
 
-#username-input, .modal input { width: 100%; padding: 16px 20px; margin-bottom: 15px; border-radius: 20px; border: none; background-color: #f0f2f5; font-size: 16px; outline: none; transition: background 0.2s; }
-#username-input:focus, .modal input:focus { background-color: #e4e7eb; }
-#login-btn, .modal button:not(.danger) { width: 100%; background-color: #00a884; color: white; padding: 16px; border-radius: 20px; font-size: 16px; font-weight: bold; border: none; cursor: pointer; transition: transform 0.1s; }
-#login-btn:active, .modal button:active { transform: scale(0.98); }
+#username-input { width: 100%; padding: 16px 20px; margin-bottom: 15px; border-radius: 20px; border: none; background-color: #f0f2f5; font-size: 16px; outline: none; transition: background 0.2s; }
+#username-input:focus { background-color: #e4e7eb; }
+#login-btn { width: 100%; background-color: #00a884; color: white; padding: 16px; border-radius: 20px; font-size: 16px; font-weight: bold; border: none; cursor: pointer; transition: transform 0.1s; }
+#login-btn:active { transform: scale(0.98); }
 
 /* Profile Settings Screen */
 .profile-container { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; background-color: #f0f2f5; flex-grow: 1; }
@@ -70,48 +70,48 @@ li.stacked .sender-name, li.stacked .avatar-small { display: none !important; }
 
 li.system-message { align-self: center !important; margin: 10px auto !important; width: fit-content !important; background-color: rgba(225,245,254,0.9) !important; border-radius: 12px !important; color: #54656f !important; font-size: 12px; font-style: normal !important; padding: 6px 14px !important; box-shadow: 0 1px 1px rgba(0,0,0,0.05) !important; text-align: center; }
 
-/* 🌟 THE FIX: Beautiful WhatsApp Reply Bubble Inside Chat */
-.replied-to {
-    background-color: rgba(0, 0, 0, 0.05); 
-    border-left: 4px solid #00a884; 
-    border-radius: 8px; 
-    padding: 6px 10px;
-    margin-bottom: 6px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-.my-message .replied-to {
-    background-color: rgba(0, 0, 0, 0.08); 
-    border-left: 4px solid #005c4b; 
-}
-.replied-to-user {
-    font-weight: bold;
-    font-size: 12px;
-    color: #00a884;
-    margin-bottom: 2px;
-}
-.my-message .replied-to-user {
-    color: #005c4b;
-}
-.replied-to-text {
-    font-size: 13px;
-    color: #54656f;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+.replied-to { background-color: rgba(0, 0, 0, 0.05); border-left: 4px solid #00a884; border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; display: flex; flex-direction: column; overflow: hidden; }
+.my-message .replied-to { background-color: rgba(0, 0, 0, 0.08); border-left: 4px solid #005c4b; }
+.replied-to-user { font-weight: bold; font-size: 12px; color: #00a884; margin-bottom: 2px; }
+.my-message .replied-to-user { color: #005c4b; }
+.replied-to-text { font-size: 13px; color: #54656f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Modals */
+/* 🌟 NEW: Premium Modal UI Upgrades */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 200; display: flex; justify-content: center; align-items: flex-end; }
-.modal-content { background: white; width: 100%; max-width: 600px; padding: 15px 25px 35px 25px; border-top-left-radius: 30px; border-top-right-radius: 30px; display: flex; flex-direction: column; gap: 8px; animation: slideUp 0.3s cubic-bezier(0.1, 0.9, 0.2, 1); }
+.modal-content { background: white; width: 100%; max-width: 600px; padding: 20px 25px 35px 25px; border-top-left-radius: 30px; border-top-right-radius: 30px; display: flex; flex-direction: column; animation: slideUp 0.3s cubic-bezier(0.1, 0.9, 0.2, 1); }
 .modal-drag-pill { width: 40px; height: 5px; background-color: #d1d7db; border-radius: 5px; margin: 0 auto 15px auto; }
-.modal-content button { padding: 16px; font-size: 17px; border-radius: 18px; border: none; background: transparent; color: #111b21; text-align: left; font-weight: 500; cursor: pointer; transition: background 0.2s; }
-.modal-content button:active { background: #f0f2f5; }
-.modal-content button.danger { color: #e53935; }
-.checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 16px; margin-bottom: 10px; color: #54656f; }
+.modal-subtitle { text-align: center; color: #8696a0; font-size: 14px; margin-bottom: 20px; }
 
-/* Input Controls */
+/* Long Press Menu Specific Buttons */
+.menu-list button { padding: 16px; font-size: 17px; border-radius: 18px; border: none; background: transparent; color: #111b21; text-align: left; font-weight: 500; cursor: pointer; transition: background 0.2s; margin-bottom: 5px; }
+.menu-list button:active { background: #f0f2f5; }
+.menu-list button.danger { color: #e53935; }
+
+/* Form Modal Specific Inputs (New Room / Join Room) */
+.form-modal h3 { text-align: center; color: #111b21; font-size: 22px; margin-bottom: 5px; }
+.input-with-icon { position: relative; width: 100%; margin-bottom: 15px; }
+.input-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 18px; opacity: 0.8; }
+.input-with-icon input { width: 100%; padding: 16px 20px 16px 45px; border-radius: 16px; border: 1px solid transparent; background-color: #f0f2f5; font-size: 16px; outline: none; transition: all 0.2s; }
+.input-with-icon input:focus { background-color: white; border-color: #00a884; box-shadow: 0 2px 8px rgba(0,168,132,0.1); }
+
+/* The Primary Green Button for Modals */
+.primary-btn { width: 100%; background-color: #00a884; color: white; padding: 16px; border-radius: 16px; font-size: 16px; font-weight: bold; border: none; cursor: pointer; transition: transform 0.1s; margin-top: 5px; }
+.primary-btn:active { transform: scale(0.98); background-color: #008f6f; }
+
+/* 🌟 THE FIX: Animated iOS/Android Style Toggle Switch */
+.toggle-container { display: flex; justify-content: space-between; align-items: center; padding: 5px; margin-bottom: 20px; }
+.toggle-text { display: flex; flex-direction: column; }
+.toggle-title { font-weight: 600; font-size: 16px; color: #111b21; }
+.toggle-desc { font-size: 13px; color: #8696a0; margin-top: 2px; }
+
+.switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #d1d7db; transition: .3s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+input:checked + .slider { background-color: #00a884; }
+input:checked + .slider:before { transform: translateX(22px); }
+
+/* Chat Input Area */
 #chat-footer-controls { padding: 6px 8px 12px 8px; display: flex; gap: 6px; align-items: flex-end; width: 100%; background: transparent; box-sizing: border-box; }
 .input-pill { flex-grow: 1; background-color: white; border-radius: 24px; display: flex; align-items: center; padding: 4px 6px; box-shadow: 0 1px 1px rgba(0,0,0,0.08); min-height: 45px; width: calc(100% - 55px); }
 .input-pill .icon-btn { color: #8696a0; font-size: 22px; padding: 4px; }
@@ -126,7 +126,6 @@ li.system-message { align-self: center !important; margin: 10px auto !important;
 
 #pinned-banner { background-color: rgba(255, 243, 205, 0.95); color: #856404; padding: 10px 15px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(5px); z-index: 2; border-bottom: 1px solid rgba(0,0,0,0.05); }
 #unpin-btn { background: none; border: none; cursor: pointer; font-size: 14px; margin-left: 10px; opacity: 0.6; }
-
 #reply-preview-container { background-color: rgba(240, 242, 245, 0.95); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #00a884; font-size: 14px; color: #111b21; margin: 0 8px -10px 8px; border-radius: 12px; z-index: 1; backdrop-filter: blur(5px); }
 
 @keyframes popIn { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
@@ -142,10 +141,14 @@ body.dark-mode .room-item:active { background-color: #202c33; }
 body.dark-mode .room-name { color: #e9edef; }
 body.dark-mode .input-pill { background-color: #2a3942; }
 body.dark-mode #the-chat-box { color: #e9edef; }
-body.dark-mode #username-input, body.dark-mode .modal input { background-color: #2a3942; color: #e9edef; }
-body.dark-mode #username-input:focus, body.dark-mode .modal input:focus { background-color: #3b4a54; }
-body.dark-mode .modal-content button { color: #e9edef; }
-body.dark-mode .modal-content button:active { background-color: #2a3942; }
+
+body.dark-mode .input-with-icon input { background-color: #2a3942; color: #e9edef; }
+body.dark-mode .input-with-icon input:focus { border-color: #00a884; background-color: #111b21; }
+body.dark-mode .toggle-title, body.dark-mode .form-modal h3 { color: #e9edef; }
+body.dark-mode .slider { background-color: #3b4a54; }
+
+body.dark-mode .menu-list button { color: #e9edef; }
+body.dark-mode .menu-list button:active { background-color: #2a3942; }
 body.dark-mode .other-message { background-color: #202c33; color: #e9edef; }
 body.dark-mode .other-message .message-text { color: #e9edef; }
 body.dark-mode .my-message { background-color: #005c4b; color: #e9edef; }
@@ -156,7 +159,6 @@ body.dark-mode .profile-input-group { background-color: #202c33; }
 body.dark-mode .profile-input-group input { color: #e9edef; }
 body.dark-mode #view-profile-name { color: #e9edef !important; }
 
-/* 🌟 Dark Mode Reply Fixes */
 body.dark-mode .replied-to { background-color: rgba(255, 255, 255, 0.05); border-left: 4px solid #21c063; }
 body.dark-mode .my-message .replied-to { background-color: rgba(0, 0, 0, 0.15); border-left: 4px solid #00a884; }
 body.dark-mode .replied-to-user { color: #21c063; }
