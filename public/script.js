@@ -6,7 +6,8 @@ const usernameInput = document.getElementById('username-input');
 
 const chatContainer = document.getElementById('chat-container');
 const chatForm = document.getElementById('chat-form');
-const input = document.getElementById('input');
+// 🌟 THE FIX: Re-linked to our new text box ID to escape Chrome Autofill
+const input = document.getElementById('chat-msg-box');
 const messages = document.getElementById('messages');
 const userListSpan = document.getElementById('user-list');
 const typingIndicator = document.getElementById('typing-indicator');
@@ -27,7 +28,6 @@ const pinnedUser = document.getElementById('pinned-user');
 const pinnedText = document.getElementById('pinned-text'); 
 const unpinBtn = document.getElementById('unpin-btn'); 
 
-// 🌟 NEW: Lightbox Elements
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
 
@@ -35,7 +35,6 @@ const notifySound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/
 
 let username = ""; let userColor = ""; let avatarUrl = ""; let replyingTo = null; 
 
-// Lightbox Logic
 lightbox.addEventListener('click', () => lightbox.classList.add('hidden'));
 
 searchInput.addEventListener('input', (e) => {
@@ -119,29 +118,21 @@ themeToggle.addEventListener('click', () => { document.body.classList.toggle('da
 emojiBtn.addEventListener('click', () => { emojiPicker.classList.toggle('hidden'); });
 emojiPicker.addEventListener('emoji-click', event => { input.value += event.detail.unicode; emojiPicker.classList.add('hidden'); input.focus(); });
 
-// 🌟 NEW: Swipe and Double-Tap Logic!
-let touchStartX = 0;
-let touchStartY = 0;
-let touchElem = null;
-let lastTapTime = 0;
+// Touch Gestures: Swipe and Double Tap
+let touchStartX = 0; let touchStartY = 0; let touchElem = null; let lastTapTime = 0;
 
 messages.addEventListener('touchstart', (e) => {
     const li = e.target.closest('li.my-message, li.other-message');
     if (!li) return;
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-    touchElem = li;
-    li.style.transition = 'none'; // Disable snapping so it drags smoothly
+    touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY;
+    touchElem = li; li.style.transition = 'none'; 
 }, { passive: true });
 
 messages.addEventListener('touchmove', (e) => {
     if (!touchElem) return;
-    const touchX = e.changedTouches[0].screenX;
-    const touchY = e.changedTouches[0].screenY;
-    const deltaX = touchX - touchStartX;
-    const deltaY = Math.abs(touchY - touchStartY);
+    const touchX = e.changedTouches[0].screenX; const touchY = e.changedTouches[0].screenY;
+    const deltaX = touchX - touchStartX; const deltaY = Math.abs(touchY - touchStartY);
 
-    // If they swipe right, slide the message!
     if (deltaX > 0 && deltaX > deltaY) {
         if (e.cancelable) e.preventDefault(); 
         touchElem.style.transform = `translateX(${Math.min(deltaX, 80)}px)`;
@@ -153,11 +144,10 @@ messages.addEventListener('touchend', (e) => {
     const touchX = e.changedTouches[0].screenX;
     const deltaX = touchX - touchStartX;
 
-    // Snap the message back into place
     touchElem.style.transition = 'transform 0.3s ease-out';
     touchElem.style.transform = 'translateX(0)';
 
-    // 🌟 SWIPE TO REPLY
+    // Swipe Right to Reply
     if (deltaX > 50) {
         const sender = touchElem.getAttribute('data-sender');
         const textElement = touchElem.querySelector('.message-text');
@@ -167,26 +157,20 @@ messages.addEventListener('touchend', (e) => {
         replyPreviewContainer.classList.remove('hidden'); input.focus(); 
     }
 
-    // 🌟 DOUBLE-TAP TO LIKE
+    // Double Tap to Like
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTapTime;
     if (tapLength < 300 && tapLength > 0) {
         const msgId = touchElem.id.replace('msg-', '');
         socket.emit('like message', msgId);
     }
-    lastTapTime = currentTime;
-    touchElem = null;
+    lastTapTime = currentTime; touchElem = null;
 });
 
-// Standard Clicks (Delete, Pin, Image Zoom)
 messages.addEventListener('click', (e) => {
-    // Open image in Lightbox
     if (e.target.classList.contains('chat-image')) {
-        lightboxImg.src = e.target.src;
-        lightbox.classList.remove('hidden');
-        return;
+        lightboxImg.src = e.target.src; lightbox.classList.remove('hidden'); return;
     }
-
     if (e.target.closest('.msg-delete-btn')) {
         if (confirm("Delete this message for everyone?")) socket.emit('delete message', e.target.closest('.msg-delete-btn').dataset.id);
         return; 
@@ -248,7 +232,6 @@ chatForm.addEventListener('submit', (e) => {
 
 socket.on('user list', (users) => { userListSpan.textContent = users.join(', '); });
 
-// 🌟 NEW: Animated Typing Bubble Trigger
 socket.on('typing', (data) => { 
     if (data.isTyping) {
         typingIndicator.classList.remove('hidden');
@@ -274,7 +257,7 @@ socket.on('message deleted', (msgId) => {
 
 function displayMessage(data, isHistory = false) {
     const item = document.createElement('li'); item.id = `msg-${data.id}`; 
-    item.setAttribute('data-sender', data.user); // Save sender for logic
+    item.setAttribute('data-sender', data.user); 
     
     if (data.type === 'system') { item.classList.add('system-message'); item.textContent = data.text; messages.appendChild(item); messages.scrollTop = messages.scrollHeight; return; }
 
@@ -291,18 +274,18 @@ function displayMessage(data, isHistory = false) {
         }
     }
 
-    // 🌟 NEW: Message Stacking Logic!
     const lastMessage = messages.lastElementChild;
     let isStacked = false;
     if (lastMessage && !lastMessage.classList.contains('system-message')) {
         const lastSenderName = lastMessage.getAttribute('data-sender');
+        // 🌟 THE FIX: Now perfectly checks the sender name to merge bubbles!
         if (lastSenderName === data.user && lastMessage.classList.contains('my-message') === isMe) {
             isStacked = true;
         }
     }
 
     item.classList.add(isMe ? 'my-message' : 'other-message');
-    if (isStacked) item.classList.add('stacked'); // Hide avatar and squish together
+    if (isStacked) item.classList.add('stacked'); 
     if (data.type === 'private') item.classList.add('private-message');
     
     let contentHTML = '';
