@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chit Chat Lobby</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#075e54">
+    <meta name="theme-color" content="#008069">
     <link rel="stylesheet" href="style.css">
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
 </head>
@@ -17,7 +17,7 @@
 
     <div id="login-screen">
         <h2>Chit Chat Lobby 😸</h2>
-        <form id="login-form">
+        <form id="login-form" autocomplete="off">
             <input type="text" id="username-input" placeholder="Enter your name..." required autocomplete="off" />
             <button type="submit" id="join-btn">Join Chat</button>
         </form>
@@ -55,12 +55,13 @@
             <button type="button" id="cancel-reply-btn">❌</button>
         </div>
 
-        <form id="chat-form" action="">
+        <form id="chat-form" autocomplete="off">
             <button type="button" id="emoji-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">😀</button>
             <button type="button" id="attach-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">📎</button>
             <input type="file" id="image-upload" accept="image/*" style="display: none;" />
             <button type="button" id="mic-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">🎤</button>
-            <input id="input" autocomplete="off" placeholder="Type a message..." required />
+            
+            <input id="chat-msg-box" name="chat_msg_random_name" autocomplete="off" placeholder="Type a message..." required />
             <button id="send-btn">Send</button>
         </form>
     </div>
