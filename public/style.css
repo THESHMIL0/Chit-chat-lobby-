@@ -18,20 +18,20 @@ body { background-color: #efeae2; display: flex; justify-content: center; align-
 #active-users { background-color: rgba(0, 128, 105, 0.9); color: white; padding: 4px 15px; font-size: 11px; white-space: nowrap; overflow-x: auto; font-weight: 500; }
 #messages { list-style-type: none; padding: 20px 15px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; overflow-x: hidden; }
 
-/* Message Bubbles */
+/* Sleek Message Bubbles */
 #messages li { padding: 6px 10px 8px 10px; border-radius: 12px; max-width: 85%; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13); word-wrap: break-word; display: flex; align-items: flex-start; gap: 8px; animation: popIn 0.3s ease-out forwards; transition: background-color 0.3s, color 0.3s, transform 0.2s ease-out; position: relative; }
 
-.avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; margin-top: 2px; }
-.message-content { display: flex; flex-direction: column; width: 100%; min-width: 0; pointer-events: none; } /* Let the LI handle clicks */
-.message-content * { pointer-events: auto; } /* Re-enable clicks inside the bubble */
+.avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; margin-top: 2px; transition: all 0.3s; }
+.message-content { display: flex; flex-direction: column; width: 100%; min-width: 0; pointer-events: none; } 
+.message-content * { pointer-events: auto; }
 
 .my-message { align-self: flex-end; background-color: #dcf8c6; border-top-right-radius: 0; flex-direction: row-reverse; }
 .my-message .message-content { align-items: flex-end; text-align: right; }
 .other-message { align-self: flex-start; background-color: #ffffff; border-top-left-radius: 0; }
 
-/* 🌟 NEW: Stacking Styles */
+/* 🌟 THE FIX: Stacking Styles */
 #messages li.stacked { margin-top: -6px !important; }
-li.stacked .avatar { visibility: hidden; height: 0; margin: 0; width: 28px; }
+li.stacked .avatar { visibility: hidden; height: 0; width: 0; margin: 0; opacity: 0; }
 li.stacked .sender-name { display: none; }
 .my-message.stacked { border-top-right-radius: 12px; }
 .other-message.stacked { border-top-left-radius: 12px; }
@@ -40,6 +40,7 @@ li.stacked .sender-name { display: none; }
 .message-text { font-size: 15px; line-height: 1.3; color: #111b21; }
 .timestamp { font-size: 11px; color: #667781; align-self: flex-end; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
 
+/* 🌟 THE FIX: Borderless, Transparent Icons */
 .like-btn, .msg-pin-btn, .msg-delete-btn { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 2px; font-size: 13px; cursor: pointer; opacity: 0.6; transition: opacity 0.2s, transform 0.1s; display: flex; align-items: center; gap: 2px; color: inherit; }
 .like-btn:hover, .msg-pin-btn:hover, .msg-delete-btn:hover { opacity: 1; transform: scale(1.1); }
 .like-btn span { font-size: 11px; font-weight: bold; color: #e53935; } 
@@ -53,7 +54,7 @@ li.stacked .sender-name { display: none; }
 .ticks.read { color: #53bdeb; } 
 .deleted-text { font-style: italic; color: #8696a0; font-size: 14px; }
 
-/* 🌟 NEW: Animated Typing Bubble */
+/* Animated Typing Bubble */
 #typing-indicator { padding: 0 20px 10px 20px; display: flex; align-items: center; gap: 8px; }
 .typing-bubble { background-color: #fff; padding: 8px 12px; border-radius: 15px; border-bottom-left-radius: 0; box-shadow: 0 1px 1px rgba(0,0,0,0.1); display: flex; gap: 4px; }
 .dot { width: 6px; height: 6px; background-color: #8696a0; border-radius: 50%; animation: bounce 1.3s linear infinite; }
@@ -62,14 +63,16 @@ li.stacked .sender-name { display: none; }
 #typing-user { font-size: 12px; color: #8696a0; font-style: italic; }
 
 #chat-form { background-color: #f0f2f5; padding: 8px 10px; display: flex; gap: 8px; align-items: center; transition: background-color 0.3s; width: 100%; z-index: 10; }
-#input { flex-grow: 1; border: none; padding: 12px 16px; border-radius: 24px; font-size: 15px; outline: none; transition: background-color 0.3s, color 0.3s; min-width: 0; background-color: white; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
+#chat-msg-box { flex-grow: 1; border: none; padding: 12px 16px; border-radius: 24px; font-size: 15px; outline: none; transition: background-color 0.3s, color 0.3s; min-width: 0; background-color: white; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
 #chat-form button { flex-shrink: 0; color: #54656f; }
+
+/* 🌟 THE FIX: Circular WhatsApp Send Button */
 #send-btn { background-color: #00a884 !important; color: white !important; border: none; border-radius: 50% !important; width: 42px; height: 42px; font-size: 15px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.2); padding: 0 !important; }
 
 .system-message { align-self: center !important; background-color: rgba(225,245,254,0.8) !important; border-radius: 10px !important; color: #54656f; font-size: 12px; font-style: italic; padding: 6px 12px !important; box-shadow: 0 1px 1px rgba(0,0,0,0.05) !important; max-width: 100%; pointer-events: none; margin: 4px 0; }
 .chat-image { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; cursor: pointer; }
 
-/* 🌟 NEW: Lightbox Styles */
+/* Lightbox Styles */
 #lightbox { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; justify-content: center; align-items: center; }
 #lightbox-img { max-width: 95%; max-height: 95%; border-radius: 10px; object-fit: contain; }
 #lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; }
@@ -91,7 +94,7 @@ body.dark-mode #username-input { background-color: #2a3942; color: #e9edef; bord
 body.dark-mode #header { background-color: #202c33; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
 body.dark-mode #active-users { background-color: #182229; color: #8696a0; }
 body.dark-mode #chat-form { background-color: #202c33; }
-body.dark-mode #input { background-color: #2a3942; color: #e9edef; }
+body.dark-mode #chat-msg-box { background-color: #2a3942; color: #e9edef; }
 body.dark-mode .other-message { background-color: #202c33; color: #e9edef; }
 body.dark-mode .other-message .message-text { color: #e9edef; }
 body.dark-mode .my-message { background-color: #005c4b; color: #e9edef; }
