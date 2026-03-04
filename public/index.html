@@ -7,48 +7,49 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#008069">
     <link rel="stylesheet" href="style.css">
-    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
 </head>
 <body>
-    <div id="lightbox" class="hidden">
-        <span id="lightbox-close">✖</span>
-        <img id="lightbox-img" src="">
+    <div id="lightbox" class="hidden"><span id="lightbox-close">✖</span><img id="lightbox-img" src=""></div>
+
+    <div id="login-screen" class="screen">
+        <h2>Welcome 😸</h2>
+        <div id="avatar-preview-container" onclick="document.getElementById('profile-pic-upload').click()">
+            <img id="avatar-preview" src="https://api.dicebear.com/7.x/bottts/svg?seed=guest" alt="Avatar">
+            <div class="edit-icon">📷</div>
+        </div>
+        <input type="file" id="profile-pic-upload" accept="image/*" class="hidden" />
+        <input type="text" id="username-input" placeholder="Enter your name..." autocomplete="nope" required />
+        <button id="login-btn">Continue</button>
     </div>
 
-    <div id="login-screen">
-        <h2>Chit Chat Lobby 😸</h2>
-        <form id="login-form">
-            <input type="text" id="username-input" placeholder="Enter your name..." required autocomplete="off" />
-            <button type="submit" id="join-btn">Join Chat</button>
-        </form>
-    </div>
-
-    <div id="chat-container" class="hidden">
-        <div id="header">
-            <span>Lobby 😸</span>
-            <input type="text" id="search-input" placeholder="🔍 Search..." autocomplete="off" spellcheck="false" />
+    <div id="room-list-screen" class="screen hidden">
+        <div class="app-header">
+            <span>Chats</span>
             <div>
-                <button id="theme-toggle" style="background: none; border: none; font-size: 20px; cursor: pointer; margin-right: 10px;">🌙</button>
-                <button id="clear-btn" style="background: none; border: none; font-size: 20px; cursor: pointer;">🗑️</button>
+                <button id="theme-toggle" class="icon-btn">🌙</button>
+                <button id="show-create-room-btn" class="icon-btn">➕</button>
             </div>
         </div>
+        <ul id="rooms-ul"></ul>
+    </div>
+
+    <div id="chat-screen" class="screen hidden">
+        <div class="app-header" id="chat-header" onclick="document.getElementById('group-pic-upload').click()">
+            <button id="back-btn" class="icon-btn" style="margin-right:10px;">⬅</button>
+            <img id="current-room-logo" src="" class="header-avatar">
+            <div style="display:flex; flex-direction:column; flex-grow:1; margin-left:10px;">
+                <span id="current-room-name" style="font-size:16px;"></span>
+                <span style="font-size:11px; opacity:0.8; font-weight:normal;">Tap to change info</span>
+            </div>
+        </div>
+        <input type="file" id="group-pic-upload" accept="image/*" class="hidden" />
         
         <div id="pinned-banner" class="hidden">
             <div>📌 <b id="pinned-user"></b>: <span id="pinned-text"></span></div>
             <button id="unpin-btn">❌</button>
         </div>
 
-        <div id="active-users">Online: <span id="user-list"></span></div>
         <ul id="messages"></ul>
-        
-        <div id="typing-indicator" class="hidden">
-            <div class="typing-bubble">
-                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-            </div>
-            <span id="typing-user"></span>
-        </div>
-        
-        <emoji-picker id="emoji-picker" class="hidden"></emoji-picker>
 
         <div id="reply-preview-container" class="hidden">
             <div id="reply-preview-text"></div>
@@ -56,22 +57,47 @@
         </div>
 
         <div id="chat-footer-controls">
-            <button type="button" id="emoji-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">😀</button>
-            <button type="button" id="attach-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">📎</button>
-            <input type="file" id="image-upload" accept="image/*" style="display: none;" />
-            <button type="button" id="mic-btn" style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 5px;">🎤</button>
-            
-            <input id="the-chat-box" type="text" inputmode="text" autocomplete="off" spellcheck="false" data-lpignore="true" placeholder="Type a message..." />
-            <button id="send-btn">Send</button>
+            <div class="input-pill">
+                <button id="emoji-btn" class="icon-btn">😀</button>
+                <input id="the-chat-box" type="text" autocomplete="nope" spellcheck="false" placeholder="Message" />
+                <button id="attach-btn" class="icon-btn">📎</button>
+                <input type="file" id="image-upload" accept="image/*" class="hidden" />
+            </div>
+            <button id="send-mic-btn" class="circle-btn">🎤</button>
+        </div>
+    </div>
+
+    <div id="message-options-modal" class="modal hidden">
+        <div class="modal-content">
+            <button id="opt-reply">↩️ Reply</button>
+            <button id="opt-like">❤️ Like</button>
+            <button id="opt-pin">📌 Pin</button>
+            <button id="opt-delete" class="danger">🗑️ Delete</button>
+            <button id="opt-cancel">Cancel</button>
+        </div>
+    </div>
+
+    <div id="create-room-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>New Room</h3>
+            <input type="text" id="new-room-name" placeholder="Room Name" autocomplete="nope">
+            <label><input type="checkbox" id="new-room-private"> Private (Needs Password)</label>
+            <input type="text" id="new-room-pass" class="hidden" placeholder="Password" autocomplete="nope">
+            <button id="create-room-submit">Create</button>
+            <button onclick="document.getElementById('create-room-modal').classList.add('hidden')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="password-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Private Room</h3>
+            <input type="text" id="join-room-pass" placeholder="Enter Password" autocomplete="nope">
+            <button id="join-room-submit">Join</button>
+            <button onclick="document.getElementById('password-modal').classList.add('hidden')">Cancel</button>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW failed', err));
-        }
-    </script>
 </body>
 </html>
