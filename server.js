@@ -18,6 +18,8 @@ let rooms = {
 
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, roomId TEXT, timestamp INTEGER, data TEXT)`);
+    // 🌟 NEW: A dedicated table to remember users and their Last Seen times!
+    db.run(`CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY, avatar TEXT, about TEXT, isOnline INTEGER, lastSeen INTEGER)`);
 });
 
 const activeUsersById = {}; 
@@ -41,16 +43,17 @@ io.on('connection', (socket) => {
         if (!room) return socket.emit('error', 'Room not found');
         if (room.isPrivate && room.password !== data.password) return socket.emit('join error', 'Incorrect Password');
 
-        // Leave old rooms
         const oldRoomId = activeUsersById[socket.id]?.roomId;
         Array.from(socket.rooms).forEach(r => { if(r !== socket.id) socket.leave(r); });
-        
-        if (oldRoomId) io.to(oldRoomId).emit('room users', getUsersInRoom(oldRoomId)); // Update old room
+        if (oldRoomId) io.to(oldRoomId).emit('room users', getUsersInRoom(oldRoomId)); 
 
         socket.join(room.id);
         activeUsersById[socket.id] = { ...data.user, roomId: room.id };
 
-        // Load history 
+        // 🌟 NEW: Save user to database and mark them ONLINE
+        db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen) VALUES (?, ?, ?, ?, ?)", 
+            [data.user.name, data.user.avatar, data.user.about, 1, Date.now()]);
+
         db.all("SELECT data FROM history WHERE roomId = ? ORDER BY timestamp ASC LIMIT 50", [room.id], (err, rows) => {
             const history = rows ? rows.map(row => JSON.parse(row.data)) : [];
             socket.emit('chat history', { room: room, history: history });
@@ -60,9 +63,25 @@ io.on('connection', (socket) => {
                 db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [sysMsg.id, room.id, Date.now(), JSON.stringify(sysMsg)]);
                 io.to(room.id).emit('chat message', sysMsg);
             }
-            
-            // 🌟 NEW: Tell everyone in the room who is currently online!
             io.to(room.id).emit('room users', getUsersInRoom(room.id));
+        });
+    });
+
+    // 🌟 NEW: Update profile instantly in DB when they save settings
+    socket.on('update profile', (user) => {
+        if(activeUsersById[socket.id]) {
+            activeUsersById[socket.id].name = user.name;
+            activeUsersById[socket.id].avatar = user.avatar;
+            activeUsersById[socket.id].about = user.about;
+        }
+        db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen) VALUES (?, ?, ?, ?, ?)", 
+            [user.name, user.avatar, user.about, 1, Date.now()]);
+    });
+
+    // 🌟 NEW: Fetch user data for the Profile Modal
+    socket.on('get user info', (username) => {
+        db.get("SELECT * FROM users WHERE name = ?", [username], (err, row) => {
+            if (row) socket.emit('user info result', row);
         });
     });
 
@@ -81,17 +100,14 @@ io.on('connection', (socket) => {
         data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
         data.type = 'chat'; data.likes = 0; data.status = 'delivered';
         
-        // 🌟 NEW: Ghost Mode (Don't save to DB if it's a ghost message!)
         if (!data.isGhost) {
             db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [data.id, roomId, Date.now(), JSON.stringify(data)]);
         }
         
         io.to(roomId).emit('chat message', data);
-        // 🌟 NEW: Send a global alert for unread badges!
         socket.broadcast.emit('global room alert', roomId);
     });
 
-    // 🌟 NEW: Edit Message Logic
     socket.on('edit message', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return;
@@ -149,9 +165,14 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         const userData = activeUsersById[socket.id];
-        if (userData && userData.roomId) {
-            delete activeUsersById[socket.id];
-            io.to(userData.roomId).emit('room users', getUsersInRoom(userData.roomId));
+        if (userData) {
+            // 🌟 NEW: Mark user as OFFLINE and save exact time
+            db.run(`UPDATE users SET isOnline = 0, lastSeen = ? WHERE name = ?`, [Date.now(), userData.name]);
+            
+            if (userData.roomId) {
+                delete activeUsersById[socket.id];
+                io.to(userData.roomId).emit('room users', getUsersInRoom(userData.roomId));
+            }
         }
     });
 });
