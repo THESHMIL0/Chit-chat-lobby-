@@ -104,12 +104,12 @@
             <img id="view-profile-avatar" src="" style="width:120px; height:120px; border-radius:50%; margin-bottom:10px; object-fit:cover; border: 2px solid #00a884;">
             <h2 id="view-profile-name" style="color: #111b21; margin-bottom: 5px;"></h2>
             <p id="view-profile-about" style="color: #667781; font-size: 15px; margin-bottom: 20px;"></p>
-            <button onclick="document.getElementById('view-profile-modal').classList.add('hidden')">Close</button>
+            <button class="primary-btn" onclick="document.getElementById('view-profile-modal').classList.add('hidden')">Close</button>
         </div>
     </div>
 
     <div id="message-options-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content menu-list">
             <div class="modal-drag-pill"></div>
             <button id="opt-reply">↩️ Reply</button>
             <button id="opt-like">❤️ Like</button>
@@ -119,22 +119,48 @@
     </div>
 
     <div id="create-room-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content form-modal">
             <div class="modal-drag-pill"></div>
-            <h3 style="margin-bottom: 10px; text-align: center;">New Room</h3>
-            <input type="text" id="new-room-name" placeholder="Room Name" autocomplete="nope">
-            <label class="checkbox-label"><input type="checkbox" id="new-room-private"> Private (Needs Password)</label>
-            <input type="text" id="new-room-pass" class="hidden" placeholder="Password" autocomplete="nope">
-            <button id="create-room-submit">Create</button>
+            <h3>Create New Room</h3>
+            <p class="modal-subtitle">Start a new conversation space</p>
+
+            <div class="input-with-icon">
+                <span class="input-icon">🏷️</span>
+                <input type="text" id="new-room-name" placeholder="Room Name" autocomplete="nope">
+            </div>
+
+            <div class="toggle-container">
+                <div class="toggle-text">
+                    <span class="toggle-title">Private Room</span>
+                    <span class="toggle-desc">Require a password to join</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="new-room-private">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <div class="input-with-icon hidden" id="password-input-container">
+                <span class="input-icon">🔒</span>
+                <input type="text" id="new-room-pass" placeholder="Set a Password" autocomplete="nope">
+            </div>
+
+            <button id="create-room-submit" class="primary-btn">Create Room</button>
         </div>
     </div>
 
     <div id="password-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content form-modal">
             <div class="modal-drag-pill"></div>
-            <h3 style="margin-bottom: 10px; text-align: center;">Private Room</h3>
-            <input type="text" id="join-room-pass" placeholder="Enter Password" autocomplete="nope">
-            <button id="join-room-submit">Join</button>
+            <h3>Private Room</h3>
+            <p class="modal-subtitle">This room requires a password</p>
+
+            <div class="input-with-icon">
+                <span class="input-icon">🔑</span>
+                <input type="text" id="join-room-pass" placeholder="Enter Password" autocomplete="nope">
+            </div>
+
+            <button id="join-room-submit" class="primary-btn">Join Room</button>
         </div>
     </div>
 
