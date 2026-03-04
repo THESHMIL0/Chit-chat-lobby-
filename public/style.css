@@ -1,11 +1,8 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-
-/* 🌟 Prevent horizontal scrolling that cuts off the Send button */
 body { background-color: #efeae2; display: flex; justify-content: center; align-items: center; height: 100dvh; width: 100%; position: fixed; top: 0; left: 0; overflow-x: hidden; overflow-y: hidden; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; transition: background-color 0.3s; }
 input { -webkit-user-select: auto; user-select: auto; }
 .hidden { display: none !important; }
 
-/* Screens */
 .screen { width: 100%; max-width: 600px; height: 100%; display: flex; flex-direction: column; background-color: #ffffff; position: absolute; top: 0; transition: transform 0.3s; overflow-x: hidden; }
 
 /* Login Screen */
@@ -21,6 +18,16 @@ input { -webkit-user-select: auto; user-select: auto; }
 #login-btn, .modal button:not(.danger) { width: 100%; background-color: #00a884; color: white; padding: 16px; border-radius: 20px; font-size: 16px; font-weight: bold; border: none; cursor: pointer; transition: transform 0.1s; }
 #login-btn:active, .modal button:active { transform: scale(0.98); }
 
+/* 🌟 NEW: Profile Settings Screen */
+.profile-container { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; background-color: #f0f2f5; flex-grow: 1; }
+#settings-avatar-container { position: relative; width: 140px; height: 140px; border-radius: 50%; margin-bottom: 30px; cursor: pointer; }
+#settings-avatar-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #00a884; }
+.profile-input-group { width: 100%; max-width: 400px; margin-bottom: 20px; background: white; padding: 12px 15px; border-radius: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.profile-input-group label { font-size: 13px; color: #00a884; font-weight: bold; margin-bottom: 5px; display: block; }
+.profile-input-group input { width: 100%; border: none; font-size: 16px; outline: none; background: transparent; padding: 5px 0; color: #111b21; }
+#save-profile-btn { width: 100%; max-width: 400px; background-color: #00a884; color: white; padding: 15px; border-radius: 20px; font-size: 16px; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; transition: transform 0.1s; }
+#save-profile-btn:active { transform: scale(0.98); }
+
 /* App Headers */
 .app-header { background-color: #008069; color: white; padding: 12px 18px; font-size: 22px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; z-index: 10; cursor: pointer; }
 .header-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: white; }
@@ -28,6 +35,10 @@ input { -webkit-user-select: auto; user-select: auto; }
 #current-room-name { font-size: 17px; }
 .header-subtitle { font-size: 12px; opacity: 0.8; font-weight: normal; }
 .icon-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.9; }
+
+/* 🌟 NEW: Floating Action Button (FAB) */
+.fab-btn { position: absolute; bottom: 25px; right: 25px; background-color: #00a884; color: white; border: none; border-radius: 18px; width: 60px; height: 60px; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 100; transition: transform 0.2s; }
+.fab-btn:active { transform: scale(0.9); }
 
 /* Room List */
 #room-list-screen { background: #ffffff; }
@@ -43,7 +54,6 @@ input { -webkit-user-select: auto; user-select: auto; }
 #chat-screen { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover; z-index: 50; }
 #messages { list-style: none; padding: 15px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; touch-action: pan-y !important; }
 
-/* 🌟 CLEAN UI: Tighter, smaller message bubbles like real WhatsApp */
 #messages li { padding: 4px 8px 6px 8px; border-radius: 12px; max-width: 80%; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13); display: flex; flex-direction: column; position: relative; animation: popIn 0.2s ease-out; }
 .my-message { align-self: flex-end; background-color: #dcf8c6; border-top-right-radius: 4px; }
 .other-message { align-self: flex-start; background-color: #ffffff; border-top-left-radius: 4px; }
@@ -51,14 +61,14 @@ input { -webkit-user-select: auto; user-select: auto; }
 #messages li.stacked.other-message { border-top-left-radius: 12px; }
 li.stacked .sender-name, li.stacked .avatar-small { display: none !important; }
 
-.avatar-small { width: 22px; height: 22px; border-radius: 50%; position: absolute; left: -30px; top: 0; }
+/* 🌟 NEW: Clicking Avatar Pointer */
+.avatar-small { width: 22px; height: 22px; border-radius: 50%; position: absolute; left: -30px; top: 0; cursor: pointer; pointer-events: auto; }
 .sender-name { font-size: 12px; font-weight: bold; margin-bottom: 1px; color: #ea005e; }
 .message-text { font-size: 15px; line-height: 1.3; color: #111b21; pointer-events: none; }
 .meta-row { align-self: flex-end; font-size: 10.5px; color: #667781; display: flex; align-items: center; gap: 4px; margin-top: 1px; height: 14px; }
 .likes-badge { color: #e53935; font-weight: bold; font-size: 11px; }
 .ticks { font-size: 13px; letter-spacing: -3px; margin-right: 3px; } .ticks.read { color: #53bdeb; }
 
-/* 🌟 THE FIX: Force System Messages to the middle with a nice background */
 li.system-message { align-self: center !important; margin: 10px auto !important; width: fit-content !important; background-color: rgba(225,245,254,0.9) !important; border-radius: 12px !important; color: #54656f !important; font-size: 12px; font-style: normal !important; padding: 6px 14px !important; box-shadow: 0 1px 1px rgba(0,0,0,0.05) !important; text-align: center; }
 
 /* Modals */
@@ -70,16 +80,14 @@ li.system-message { align-self: center !important; margin: 10px auto !important;
 .modal-content button.danger { color: #e53935; }
 .checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 16px; margin-bottom: 10px; color: #54656f; }
 
-/* 🌟 THE FIX: Re-structured Input area so the Send button never gets cut off */
+/* Input Controls */
 #chat-footer-controls { padding: 6px 8px 12px 8px; display: flex; gap: 6px; align-items: flex-end; width: 100%; background: transparent; box-sizing: border-box; }
 .input-pill { flex-grow: 1; background-color: white; border-radius: 24px; display: flex; align-items: center; padding: 4px 6px; box-shadow: 0 1px 1px rgba(0,0,0,0.08); min-height: 45px; width: calc(100% - 55px); }
 .input-pill .icon-btn { color: #8696a0; font-size: 22px; padding: 4px; }
 #the-chat-box { flex-grow: 1; border: none; font-size: 16px; outline: none; background: transparent; padding: 8px 5px; min-width: 0; }
-
 .circle-btn { background-color: #00a884; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 18px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.1s; margin-bottom: 0; }
 .circle-btn:active { transform: scale(0.9); }
 
-/* Lightbox & Banners */
 #lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; justify-content: center; align-items: center; cursor: pointer; }
 #lightbox-img { max-width: 95%; max-height: 95%; border-radius: 12px; object-fit: contain; pointer-events: none; }
 #lightbox-close-area { position: absolute; top: 0; right: 0; width: 80px; height: 80px; display: flex; justify-content: center; align-items: center; z-index: 1001; cursor: pointer; }
@@ -92,7 +100,7 @@ li.system-message { align-self: center !important; margin: 10px auto !important;
 @keyframes popIn { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
 @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
 
-/* Dark Mode perfectly matching actual WhatsApp */
+/* Dark Mode Updates */
 body.dark-mode #login-screen, body.dark-mode #room-list-screen { background-color: #111b21; }
 body.dark-mode .login-card { background-color: #202c33; box-shadow: none; color: #e9edef; }
 body.dark-mode .modal-content { background-color: #202c33; color: #e9edef; }
@@ -111,3 +119,7 @@ body.dark-mode .other-message .message-text { color: #e9edef; }
 body.dark-mode .my-message { background-color: #005c4b; color: #e9edef; }
 body.dark-mode .my-message .message-text { color: #e9edef; }
 body.dark-mode li.system-message { background-color: #182229 !important; color: #8696a0 !important; }
+body.dark-mode .profile-container { background-color: #111b21; }
+body.dark-mode .profile-input-group { background-color: #202c33; }
+body.dark-mode .profile-input-group input { color: #e9edef; }
+body.dark-mode #view-profile-name { color: #e9edef !important; }
