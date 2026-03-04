@@ -1,9 +1,8 @@
-// This lets the phone know our app has a background worker
-self.addEventListener('install', (event) => {
-    console.log('Service Worker: Installed 😸');
+// A simple service worker to allow PWA installation
+self.addEventListener('install', (e) => {
+    console.log('[Service Worker] Install');
 });
 
-// This is required for the worker to be valid, even if it does nothing yet
-self.addEventListener('fetch', (event) => {
-    // Just lets network requests pass through normally
+self.addEventListener('fetch', (e) => {
+    // Just lets the browser handle requests normally
 });
