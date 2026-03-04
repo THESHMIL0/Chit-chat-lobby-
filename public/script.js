@@ -26,7 +26,6 @@ let username = ""; let userColor = ""; let avatarUrl = ""; let replyingTo = null
 
 attachBtn.addEventListener('click', () => imageUpload.click());
 
-// 🌟 FIX: Auto-compressing images instead of showing an error!
 imageUpload.addEventListener('change', function() {
     const file = this.files[0];
     if (file) {
@@ -35,37 +34,20 @@ imageUpload.addEventListener('change', function() {
         reader.onload = (event) => {
             const img = new Image();
             img.src = event.target.result;
-            
             img.onload = () => {
-                // Create a canvas to resize the image
                 const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                const MAX_WIDTH = 600; // Shrink it down so it fits nicely and sends fast
-                
-                if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
-                }
-                canvas.width = width;
-                canvas.height = height;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                // Compress into a high-quality JPEG
+                let width = img.width; let height = img.height;
+                const MAX_WIDTH = 600; 
+                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
                 const compressedImage = canvas.toDataURL('image/jpeg', 0.8);
 
                 socket.emit('chat message', {
-                    user: username, text: '', 
-                    uploadedImage: compressedImage, // Send the squished image!
-                    color: userColor, avatar: avatarUrl,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    replyTo: replyingTo
+                    user: username, text: '', uploadedImage: compressedImage, color: userColor, avatar: avatarUrl,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), replyTo: replyingTo
                 });
                 replyingTo = null; replyPreviewContainer.classList.add('hidden'); emojiPicker.classList.add('hidden');
-                
-                // Reset the file input so you can send the same image again later if you want
                 imageUpload.value = ''; 
             };
         };
@@ -98,14 +80,11 @@ micBtn.addEventListener('mousedown', startRecording); micBtn.addEventListener('m
 micBtn.addEventListener('mouseleave', stopRecording); micBtn.addEventListener('touchstart', startRecording);
 micBtn.addEventListener('touchend', stopRecording);
 
-window.addEventListener('focus', () => {
-    if (username) socket.emit('mark read'); 
-});
+window.addEventListener('focus', () => { if (username) socket.emit('mark read'); });
 
 socket.on('messages read', () => {
     document.querySelectorAll('.ticks.delivered').forEach(el => {
-        el.classList.remove('delivered');
-        el.classList.add('read');
+        el.classList.remove('delivered'); el.classList.add('read');
     });
 });
 
@@ -118,9 +97,17 @@ emojiBtn.addEventListener('click', () => { emojiPicker.classList.toggle('hidden'
 emojiPicker.addEventListener('emoji-click', event => { input.value += event.detail.unicode; emojiPicker.classList.add('hidden'); input.focus(); });
 
 messages.addEventListener('click', (e) => {
-    if (e.target.closest('.like-btn')) {
-        socket.emit('like message', e.target.closest('.like-btn').dataset.id); return; 
+    // 🌟 NEW: Check if they clicked the Delete button!
+    if (e.target.closest('.msg-delete-btn')) {
+        const msgId = e.target.closest('.msg-delete-btn').dataset.id;
+        if (confirm("Delete this message for everyone?")) {
+            socket.emit('delete message', msgId);
+        }
+        return; 
     }
+
+    if (e.target.closest('.like-btn')) { socket.emit('like message', e.target.closest('.like-btn').dataset.id); return; }
+    
     const li = e.target.closest('li');
     if (!li || li.classList.contains('system-message')) return;
     const sender = li.querySelector('.sender-name').textContent;
@@ -147,7 +134,13 @@ loginForm.addEventListener('submit', (e) => {
     }
 });
 
-clearBtn.addEventListener('click', () => { messages.innerHTML = ''; });
+// 🌟 FIX: Added confirmation so you don't accidentally wipe the chat!
+clearBtn.addEventListener('click', () => { 
+    if (confirm("Are you sure you want to clear your local screen? (This will not delete messages for other people)")) {
+        messages.innerHTML = ''; 
+    }
+});
+
 function escapeHTML(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
 
 let typingTimeout;
@@ -191,6 +184,27 @@ socket.on('update likes', (data) => {
     if (likeSpan) likeSpan.textContent = data.likes > 0 ? data.likes : '';
 });
 
+// 🌟 NEW: Listen for a deleted message and replace it!
+socket.on('message deleted', (msgId) => {
+    const item = document.getElementById(`msg-${msgId}`);
+    if (item) {
+        // Find whatever content was there and replace it with the deleted text
+        const contentArea = item.querySelector('.message-text, .chat-image, .chat-audio');
+        if (contentArea) {
+            const deletedNotice = document.createElement('span');
+            deletedNotice.className = 'deleted-text';
+            deletedNotice.innerHTML = '🚫 This message was deleted';
+            contentArea.replaceWith(deletedNotice);
+        }
+        // Remove the delete button so it can't be clicked again
+        const delBtn = item.querySelector('.msg-delete-btn');
+        if (delBtn) delBtn.remove();
+        // Remove the reply block if it exists
+        const replyBlock = item.querySelector('.replied-to');
+        if (replyBlock) replyBlock.remove();
+    }
+});
+
 function displayMessage(data, isHistory = false) {
     const item = document.createElement('li');
     item.id = `msg-${data.id}`; 
@@ -227,9 +241,11 @@ function displayMessage(data, isHistory = false) {
     }
 
     let ticksHTML = '';
+    let deleteBtnHTML = ''; // 🌟 NEW: Adding the delete button logic
     if (isMe && data.type !== 'private') {
         const tickClass = data.status === 'read' ? 'read' : 'delivered';
         ticksHTML = `<span class="ticks ${tickClass}">✔✔</span>`;
+        deleteBtnHTML = `<button class="msg-delete-btn" data-id="${data.id}">🗑️</button>`;
     }
     
     item.innerHTML = `
@@ -244,6 +260,7 @@ function displayMessage(data, isHistory = false) {
                 ${data.time} 
                 <button class="like-btn" data-id="${data.id}">❤️ <span id="like-count-${data.id}">${data.likes > 0 ? data.likes : ''}</span></button>
                 ${ticksHTML}
+                ${deleteBtnHTML}
             </span>
         </div>
     `;
