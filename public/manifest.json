@@ -1,18 +1,18 @@
 {
   "name": "Chit Chat Lobby",
-  "short_name": "Chit Chat",
+  "short_name": "ChitChat",
   "start_url": "/",
-  "display": "fullscreen",
+  "display": "standalone",
   "background_color": "#e5ddd5",
   "theme_color": "#075e54",
   "icons": [
     {
-      "src": "https://via.placeholder.com/192/075e54/ffffff?text=CCL",
+      "src": "https://api.dicebear.com/7.x/bottts/png?seed=lobby&size=192",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://via.placeholder.com/512/075e54/ffffff?text=CCL",
+      "src": "https://api.dicebear.com/7.x/bottts/png?seed=lobby&size=512",
       "sizes": "512x512",
       "type": "image/png"
     }
