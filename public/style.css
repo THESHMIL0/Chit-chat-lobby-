@@ -4,82 +4,104 @@ input { -webkit-user-select: auto; user-select: auto; }
 .hidden { display: none !important; }
 
 /* Screens */
-.screen { width: 100%; max-width: 600px; height: 100%; display: flex; flex-direction: column; background-color: #efeae2; position: absolute; top: 0; transition: transform 0.3s; }
+.screen { width: 100%; max-width: 600px; height: 100%; display: flex; flex-direction: column; background-color: #ffffff; position: absolute; top: 0; transition: transform 0.3s; }
 
-/* Login Screen */
-#login-screen { background-color: white; padding: 40px; align-items: center; justify-content: center; z-index: 100; }
-#avatar-preview-container { position: relative; width: 120px; height: 120px; border-radius: 50%; margin-bottom: 20px; cursor: pointer; }
-#avatar-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #00a884; }
-.edit-icon { position: absolute; bottom: 0; right: 0; background: #00a884; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; font-size: 18px; border: 2px solid white; }
-#username-input, #login-screen button, .modal input, .modal button { width: 100%; max-width: 300px; padding: 12px; margin-bottom: 10px; border-radius: 20px; border: 1px solid #ddd; font-size: 16px; outline: none; }
-#login-btn, .modal button:not(.danger) { background-color: #00a884; color: white; font-weight: bold; border: none; cursor: pointer; }
+/* 🌟 CLEAN UI: Soft Login Card with no borders */
+#login-screen { background-color: #efeae2; align-items: center; justify-content: center; z-index: 100; }
+.login-card { background: white; padding: 40px 30px; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); text-align: center; width: 90%; max-width: 350px; display: flex; flex-direction: column; align-items: center; }
+.login-card h2 { margin-bottom: 25px; color: #00a884; font-size: 26px; }
+#avatar-preview-container { position: relative; width: 110px; height: 110px; border-radius: 50%; margin-bottom: 25px; cursor: pointer; }
+#avatar-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.edit-icon { position: absolute; bottom: 0; right: 0; background: #00a884; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; font-size: 18px; border: 3px solid white; }
+
+/* 🌟 CLEAN UI: Borderless soft-gray inputs */
+#username-input, .modal input { width: 100%; padding: 16px 20px; margin-bottom: 15px; border-radius: 20px; border: none; background-color: #f0f2f5; font-size: 16px; outline: none; transition: background 0.2s; }
+#username-input:focus, .modal input:focus { background-color: #e4e7eb; }
+#login-btn, .modal button:not(.danger) { width: 100%; background-color: #00a884; color: white; padding: 16px; border-radius: 20px; font-size: 16px; font-weight: bold; border: none; cursor: pointer; transition: transform 0.1s; }
+#login-btn:active, .modal button:active { transform: scale(0.98); }
 
 /* App Headers */
-.app-header { background-color: #008069; color: white; padding: 10px 15px; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10; cursor: pointer; }
-.header-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: white; }
-.icon-btn { background: none; border: none; color: white; font-size: 22px; cursor: pointer; opacity: 0.9; }
+.app-header { background-color: #008069; color: white; padding: 12px 18px; font-size: 22px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; z-index: 10; cursor: pointer; }
+.header-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: white; }
+.header-text-container { display: flex; flex-direction: column; flex-grow: 1; margin-left: 12px; }
+#current-room-name { font-size: 17px; }
+.header-subtitle { font-size: 12px; opacity: 0.8; font-weight: normal; }
+.icon-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.9; }
 
-/* Room List */
-#rooms-ul { list-style: none; overflow-y: auto; background: white; flex-grow: 1; }
-.room-item { padding: 15px; border-bottom: 1px solid #f0f2f5; display: flex; align-items: center; gap: 15px; cursor: pointer; }
-.room-item img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+/* 🌟 CLEAN UI: Seamless Room List */
+#room-list-screen { background: #ffffff; }
+#rooms-ul { list-style: none; overflow-y: auto; padding-top: 5px; flex-grow: 1; }
+.room-item { padding: 14px 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: background 0.2s; }
+.room-item:active { background-color: #f5f6f6; }
+.room-item img { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; }
 .room-info { flex-grow: 1; display: flex; flex-direction: column; }
-.room-name { font-size: 17px; font-weight: 500; color: #111b21; }
-.room-status { font-size: 13px; color: #667781; }
+.room-name { font-size: 17px; font-weight: 500; color: #111b21; margin-bottom: 3px; }
+.room-status { font-size: 14px; color: #667781; }
 
 /* Chat Screen */
 #chat-screen { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover; z-index: 50; }
 #messages { list-style: none; padding: 15px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; touch-action: pan-y !important; }
 
 /* Message Bubbles */
-#messages li { padding: 6px 9px 8px 9px; border-radius: 12px; max-width: 80%; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13); display: flex; flex-direction: column; position: relative; animation: popIn 0.2s ease-out; }
-.my-message { align-self: flex-end; background-color: #dcf8c6; border-top-right-radius: 0; }
-.other-message { align-self: flex-start; background-color: #ffffff; border-top-left-radius: 0; }
-#messages li.stacked.my-message { border-top-right-radius: 12px; }
-#messages li.stacked.other-message { border-top-left-radius: 12px; }
+#messages li { padding: 6px 9px 8px 9px; border-radius: 15px; max-width: 80%; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13); display: flex; flex-direction: column; position: relative; animation: popIn 0.2s ease-out; }
+.my-message { align-self: flex-end; background-color: #dcf8c6; border-top-right-radius: 4px; }
+.other-message { align-self: flex-start; background-color: #ffffff; border-top-left-radius: 4px; }
+#messages li.stacked.my-message { border-top-right-radius: 15px; }
+#messages li.stacked.other-message { border-top-left-radius: 15px; }
 li.stacked .sender-name, li.stacked .avatar-small { display: none !important; }
 
-.avatar-small { width: 20px; height: 20px; border-radius: 50%; position: absolute; left: -28px; top: 0; }
+.avatar-small { width: 22px; height: 22px; border-radius: 50%; position: absolute; left: -30px; top: 0; }
 .sender-name { font-size: 13px; font-weight: bold; margin-bottom: 2px; color: #ea005e; }
-.message-text { font-size: 15px; line-height: 1.4; color: #111b21; pointer-events: none; }
+.message-text { font-size: 16px; line-height: 1.4; color: #111b21; pointer-events: none; }
 .meta-row { align-self: flex-end; font-size: 11px; color: #667781; display: flex; align-items: center; gap: 4px; margin-top: 2px; height: 15px; }
 .likes-badge { color: #e53935; font-weight: bold; font-size: 12px; }
 .ticks { font-size: 14px; letter-spacing: -3px; margin-right: 3px; } .ticks.read { color: #53bdeb; }
 
-/* Modals (Long Press & Inputs) */
-.modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.6); z-index: 200; display: flex; justify-content: center; align-items: flex-end; }
-.modal-content { background: white; width: 100%; max-width: 600px; padding: 20px; border-top-left-radius: 20px; border-top-right-radius: 20px; display: flex; flex-direction: column; gap: 10px; animation: slideUp 0.3s ease-out; }
-.modal-content button { padding: 15px; font-size: 16px; border-radius: 10px; border: none; background: #f0f2f5; color: #111b21; text-align: left; font-weight: 500; cursor: pointer; }
+/* 🌟 CLEAN UI: Modern Native Modals (Bottom Sheets) */
+.modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 200; display: flex; justify-content: center; align-items: flex-end; }
+.modal-content { background: white; width: 100%; max-width: 600px; padding: 15px 25px 35px 25px; border-top-left-radius: 30px; border-top-right-radius: 30px; display: flex; flex-direction: column; gap: 8px; animation: slideUp 0.3s cubic-bezier(0.1, 0.9, 0.2, 1); }
+.modal-drag-pill { width: 40px; height: 5px; background-color: #d1d7db; border-radius: 5px; margin: 0 auto 15px auto; }
+.modal-content button { padding: 16px; font-size: 17px; border-radius: 18px; border: none; background: transparent; color: #111b21; text-align: left; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+.modal-content button:active { background: #f0f2f5; }
 .modal-content button.danger { color: #e53935; }
+.checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 16px; margin-bottom: 10px; color: #54656f; }
 
-/* 🌟 PERFECT WHATSAPP INPUT AREA */
+/* Chat Input Area */
 #chat-footer-controls { padding: 8px 10px; display: flex; gap: 8px; align-items: flex-end; width: 100%; background: transparent; }
-.input-pill { flex-grow: 1; background-color: white; border-radius: 24px; display: flex; align-items: center; padding: 5px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); min-height: 45px; }
-.input-pill .icon-btn { color: #8696a0; font-size: 24px; padding: 5px 8px; }
-#the-chat-box { flex-grow: 1; border: none; font-size: 16px; outline: none; background: transparent; padding: 8px 0; min-width: 0; }
-.circle-btn { background-color: #00a884; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 20px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.2s; }
+.input-pill { flex-grow: 1; background-color: white; border-radius: 24px; display: flex; align-items: center; padding: 4px; padding-left: 8px; box-shadow: 0 1px 1px rgba(0,0,0,0.08); min-height: 48px; }
+.input-pill .icon-btn { color: #8696a0; font-size: 24px; padding: 5px; }
+#the-chat-box { flex-grow: 1; border: none; font-size: 16px; outline: none; background: transparent; padding: 10px 5px; min-width: 0; }
+.circle-btn { background-color: #00a884; color: white; border: none; border-radius: 50%; width: 48px; height: 48px; font-size: 20px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.1s; }
 .circle-btn:active { transform: scale(0.9); }
-.circle-btn.send-mode { background-color: #00a884; }
 
-/* Lightbox & Banners */
-#lightbox { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; justify-content: center; align-items: center; }
-#lightbox-img { max-width: 95%; max-height: 95%; border-radius: 10px; object-fit: contain; }
-#pinned-banner { background-color: #f0f2f5; color: #54656f; padding: 8px 15px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #00a884; margin-bottom: -5px; z-index: 2; }
-#reply-preview-container { background-color: #f0f2f5; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #00a884; font-size: 13px; color: #333; margin: 0 10px -10px 10px; border-radius: 10px; z-index: 1; }
+/* 🌟 THE FIX: Better Lightbox */
+#lightbox { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+#lightbox-img { max-width: 95%; max-height: 95%; border-radius: 12px; object-fit: contain; pointer-events: none; }
+#lightbox-close-area { position: absolute; top: 0; right: 0; width: 80px; height: 80px; display: flex; justify-content: center; align-items: center; z-index: 1001; cursor: pointer; }
+#lightbox-close { color: white; font-size: 35px; background: rgba(0,0,0,0.5); border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
 
-@keyframes popIn { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+#pinned-banner { background-color: rgba(255, 243, 205, 0.95); color: #856404; padding: 10px 15px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(5px); z-index: 2; border-bottom: 1px solid rgba(0,0,0,0.05); }
+#unpin-btn { background: none; border: none; cursor: pointer; font-size: 14px; margin-left: 10px; opacity: 0.6; }
+#reply-preview-container { background-color: rgba(240, 242, 245, 0.95); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #00a884; font-size: 14px; color: #111b21; margin: 0 10px -10px 10px; border-radius: 12px; z-index: 1; backdrop-filter: blur(5px); }
+
+@keyframes popIn { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
 @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
 
 /* Dark Mode */
-body.dark-mode #login-screen, body.dark-mode #rooms-ul, body.dark-mode .modal-content { background-color: #111b21; color: #e9edef; }
+body.dark-mode #login-screen, body.dark-mode #room-list-screen { background-color: #111b21; }
+body.dark-mode .login-card { background-color: #202c33; box-shadow: none; color: #e9edef; }
+body.dark-mode .modal-content { background-color: #202c33; color: #e9edef; }
+body.dark-mode .modal-drag-pill { background-color: #3b4a54; }
 body.dark-mode .app-header { background-color: #202c33; }
-body.dark-mode .room-item { border-color: #202c33; }
+body.dark-mode .room-item:active { background-color: #202c33; }
 body.dark-mode .room-name { color: #e9edef; }
 body.dark-mode .input-pill { background-color: #2a3942; }
 body.dark-mode #the-chat-box { color: #e9edef; }
+body.dark-mode #username-input, body.dark-mode .modal input { background-color: #2a3942; color: #e9edef; }
+body.dark-mode #username-input:focus, body.dark-mode .modal input:focus { background-color: #3b4a54; }
+body.dark-mode .modal-content button { color: #e9edef; }
+body.dark-mode .modal-content button:active { background-color: #2a3942; }
 body.dark-mode .other-message { background-color: #202c33; color: #e9edef; }
 body.dark-mode .other-message .message-text { color: #e9edef; }
 body.dark-mode .my-message { background-color: #005c4b; color: #e9edef; }
 body.dark-mode .my-message .message-text { color: #e9edef; }
-body.dark-mode .modal-content button { background-color: #202c33; color: #e9edef; }
-body.dark-mode .modal-content button.danger { color: #ff5252; }
