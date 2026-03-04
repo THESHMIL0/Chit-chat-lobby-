@@ -1,6 +1,6 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
-/* 🌟 PREMIUM BACKGROUND: Soft gradient instead of flat color */
+/* 🌟 PREMIUM BACKGROUND: Soft gradient */
 body { 
     background: linear-gradient(135deg, #e5ddd5 0%, #d1d7db 100%); 
     display: flex; justify-content: center; align-items: center; 
@@ -14,57 +14,48 @@ input { -webkit-user-select: auto; user-select: auto; }
 .screen { width: 100%; max-width: 600px; height: 100%; display: flex; flex-direction: column; background-color: #ffffff; position: absolute; top: 0; transition: transform 0.3s; overflow-x: hidden; }
 
 /* =========================================
-   🌟 LOGIN SCREEN GLOW-UP
+   🌟 LOGIN SCREEN
    ========================================= */
 #login-screen { background: transparent; align-items: center; justify-content: center; z-index: 100; }
 .login-card { 
     background: rgba(255, 255, 255, 0.95); 
-    backdrop-filter: blur(10px); /* Frosted Glass */
-    -webkit-backdrop-filter: blur(10px);
-    padding: 45px 30px; 
-    border-radius: 35px; 
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    padding: 45px 30px; border-radius: 35px; 
     box-shadow: 0 20px 50px rgba(0,0,0,0.08); 
     text-align: center; width: 90%; max-width: 360px; 
     display: flex; flex-direction: column; align-items: center; 
 }
 .login-card h2 { margin-bottom: 30px; color: #00a884; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
 
-/* 🌟 PERFECT CAMERA ICON POSITIONING */
 #avatar-preview-container { position: relative; width: 120px; height: 120px; border-radius: 50%; margin-bottom: 30px; cursor: pointer; }
 #avatar-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #f0f2f5; }
 .edit-icon { 
     position: absolute; bottom: 2px; right: 2px; 
-    background: #00a884; color: white; 
-    border-radius: 50%; width: 38px; height: 38px; 
-    display: flex; justify-content: center; align-items: center; 
-    font-size: 18px; border: 4px solid white; 
-    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    background: #00a884; color: white; border-radius: 50%; width: 38px; height: 38px; 
+    display: flex; justify-content: center; align-items: center; font-size: 18px; 
+    border: 4px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.15);
 }
 
-#username-input, .premium-input { 
-    width: 100%; padding: 18px 20px; margin-bottom: 15px; 
-    border-radius: 20px; border: 2px solid transparent; 
-    background-color: #f0f2f5; font-size: 16px; outline: none; 
-    transition: all 0.3s ease; color: #111b21; font-weight: 500;
+.premium-input, #username-input { 
+    width: 100%; padding: 18px 20px; margin-bottom: 15px; border-radius: 20px; 
+    border: 2px solid transparent; background-color: #f0f2f5; font-size: 16px; 
+    outline: none; transition: all 0.3s ease; color: #111b21; font-weight: 500;
 }
-#username-input:focus, .premium-input:focus { background-color: #ffffff; border-color: #00a884; box-shadow: 0 4px 15px rgba(0,168,132,0.1); }
+.premium-input:focus, #username-input:focus { background-color: #ffffff; border-color: #00a884; box-shadow: 0 4px 15px rgba(0,168,132,0.1); }
 
-#login-btn, .primary-btn { 
-    width: 100%; background-color: #00a884; color: white; 
-    padding: 18px; border-radius: 20px; font-size: 17px; 
-    font-weight: bold; border: none; cursor: pointer; 
-    transition: transform 0.1s, background-color 0.2s; 
-    margin-top: 10px; box-shadow: 0 4px 15px rgba(0,168,132,0.2);
+.primary-btn, #login-btn { 
+    width: 100%; background-color: #00a884; color: white; padding: 18px; 
+    border-radius: 20px; font-size: 17px; font-weight: bold; border: none; cursor: pointer; 
+    transition: transform 0.1s, background-color 0.2s; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,168,132,0.2);
 }
-#login-btn:active, .primary-btn:active { transform: scale(0.97); background-color: #008f6f; }
+.primary-btn:active, #login-btn:active { transform: scale(0.97); background-color: #008f6f; }
 
 /* =========================================
-   APP HEADERS & NAVIGATION
+   🌟 APP HEADERS & FAB
    ========================================= */
 .app-header { 
-    background-color: #008069; color: white; padding: 12px 18px; 
-    font-size: 22px; font-weight: 600; display: flex; 
-    align-items: center; justify-content: space-between; 
+    background-color: #008069; color: white; padding: 12px 18px; font-size: 22px; 
+    font-weight: 600; display: flex; align-items: center; justify-content: space-between; 
     z-index: 10; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 .header-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: white; }
@@ -74,18 +65,17 @@ input { -webkit-user-select: auto; user-select: auto; }
 .icon-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.9; transition: opacity 0.2s; }
 .icon-btn:active { opacity: 0.5; }
 
-/* FAB Button */
 .fab-btn { 
-    position: absolute; bottom: 25px; right: 25px; 
-    background-color: #00a884; color: white; border: none; 
-    border-radius: 20px; width: 64px; height: 64px; font-size: 26px; 
-    box-shadow: 0 6px 16px rgba(0,168,132,0.4); cursor: pointer; 
-    display: flex; justify-content: center; align-items: center; 
-    z-index: 100; transition: transform 0.2s; 
+    position: absolute; bottom: 25px; right: 25px; background-color: #00a884; color: white; 
+    border: none; border-radius: 20px; width: 64px; height: 64px; font-size: 26px; 
+    box-shadow: 0 6px 16px rgba(0,168,132,0.4); cursor: pointer; display: flex; 
+    justify-content: center; align-items: center; z-index: 100; transition: transform 0.2s; 
 }
 .fab-btn:active { transform: scale(0.9); }
 
-/* Room List */
+/* =========================================
+   🌟 ROOM LIST & UNREAD BADGES
+   ========================================= */
 #room-list-screen { background: #ffffff; }
 #rooms-ul { list-style: none; overflow-y: auto; padding-top: 5px; flex-grow: 1; }
 .room-item { padding: 16px 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: background 0.2s; }
@@ -97,15 +87,24 @@ input { -webkit-user-select: auto; user-select: auto; }
 .unread-badge { background-color: #25D366; color: white; border-radius: 50%; padding: 4px 8px; font-size: 12px; font-weight: bold; margin-left: auto; box-shadow: 0 2px 4px rgba(37,211,102,0.3); }
 
 /* =========================================
-   CHAT SCREEN & BUBBLES
+   🌟 PROFILE SETTINGS SCREEN
+   ========================================= */
+.profile-container { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; background-color: #f0f2f5; flex-grow: 1; }
+#settings-avatar-container { position: relative; width: 140px; height: 140px; border-radius: 50%; margin-bottom: 30px; cursor: pointer; }
+#settings-avatar-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #00a884; }
+.profile-input-group { width: 100%; max-width: 400px; margin-bottom: 20px; }
+.profile-input-group label { font-size: 13px; color: #00a884; font-weight: bold; margin-bottom: 8px; display: block; margin-left: 5px; }
+
+/* =========================================
+   🌟 CHAT SCREEN & BUBBLES
    ========================================= */
 #chat-screen { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover; z-index: 50; }
 #messages { list-style: none; padding: 15px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; touch-action: pan-y !important; }
 
 #messages li { 
     padding: 6px 10px 8px 10px; border-radius: 12px; max-width: 80%; 
-    box-shadow: 0 1px 1px rgba(11,20,26,0.1); display: flex; 
-    flex-direction: column; position: relative; animation: popIn 0.2s ease-out; 
+    box-shadow: 0 1px 1px rgba(11,20,26,0.1); display: flex; flex-direction: column; 
+    position: relative; animation: popIn 0.2s ease-out; 
 }
 .my-message { align-self: flex-end; background-color: #dcf8c6; border-top-right-radius: 4px; }
 .other-message { align-self: flex-start; background-color: #ffffff; border-top-left-radius: 4px; }
@@ -139,29 +138,43 @@ li.system-message {
 .replied-to-text { font-size: 14px; color: #54656f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* =========================================
-   🌟 FROSTED GLASS MODALS (Bottom Sheets)
+   🌟 CHAT INPUT AREA
+   ========================================= */
+#chat-footer-controls { padding: 8px 10px 15px 10px; display: flex; gap: 8px; align-items: flex-end; width: 100%; background: transparent; box-sizing: border-box; }
+.input-pill { flex-grow: 1; background-color: white; border-radius: 30px; display: flex; align-items: center; padding: 5px 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); min-height: 50px; width: calc(100% - 60px); }
+.input-pill .icon-btn { color: #8696a0; font-size: 24px; padding: 6px; }
+#ghost-btn.active { color: #ff5252; background-color: rgba(255, 82, 82, 0.1); border-radius: 50%; }
+#the-chat-box { flex-grow: 1; border: none; font-size: 16.5px; outline: none; background: transparent; padding: 10px 5px; min-width: 0; }
+.circle-btn { background-color: #00a884; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 20px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 6px rgba(0,168,132,0.3); cursor: pointer; margin-bottom: 0; transition: transform 0.1s; }
+.circle-btn:active { transform: scale(0.9); }
+
+/* =========================================
+   🌟 FROSTED GLASS MODALS & MENUS
    ========================================= */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: rgba(0,0,0,0.4); z-index: 200; display: flex; justify-content: center; align-items: flex-end; }
 .modal-content { 
-    background: rgba(255, 255, 255, 0.98); 
-    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-    width: 100%; max-width: 600px; padding: 20px 25px 35px 25px; 
-    border-top-left-radius: 35px; border-top-right-radius: 35px; 
-    display: flex; flex-direction: column; 
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
-    animation: slideUp 0.3s cubic-bezier(0.1, 0.9, 0.2, 1); 
+    background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    width: 100%; max-width: 600px; padding: 20px 25px 35px 25px; border-top-left-radius: 35px; border-top-right-radius: 35px; 
+    display: flex; flex-direction: column; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); animation: slideUp 0.3s cubic-bezier(0.1, 0.9, 0.2, 1); 
 }
 .modal-drag-pill { width: 45px; height: 5px; background-color: #d1d7db; border-radius: 5px; margin: 0 auto 25px auto; }
 .form-modal h3 { text-align: center; color: #111b21; font-size: 24px; font-weight: 700; margin-bottom: 5px; }
 .modal-subtitle { text-align: center; color: #8696a0; font-size: 15px; margin-bottom: 0px; }
 
-/* Modal Icons and Inputs */
 .input-with-icon { position: relative; width: 100%; margin-bottom: 15px; }
 .input-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); font-size: 20px; opacity: 0.9; }
 .input-with-icon input { width: 100%; padding: 18px 20px 18px 50px; border-radius: 20px; border: 2px solid transparent; background-color: #f0f2f5; font-size: 16px; outline: none; transition: all 0.3s; color: #111b21; font-weight: 500;}
 .input-with-icon input:focus { background-color: white; border-color: #00a884; box-shadow: 0 4px 15px rgba(0,168,132,0.1); }
 
-/* Premium Toggle */
+/* iOS Style Menu Buttons */
+.menu-list { gap: 8px; }
+.menu-btn { display: flex; align-items: center; gap: 15px; padding: 14px 18px; font-size: 17px; font-weight: 600; border: none; background: #f5f6f6; color: #111b21; cursor: pointer; border-radius: 20px; transition: background 0.2s, transform 0.1s; width: 100%; }
+.menu-btn:active { background: #e4e7eb; transform: scale(0.98); }
+.menu-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; flex-shrink: 0; }
+.menu-btn.danger { color: #e53935; background: rgba(229, 57, 53, 0.05); }
+.menu-btn.danger:active { background: rgba(229, 57, 53, 0.1); }
+
+/* Animated Toggle Switch */
 .premium-toggle { display: flex; justify-content: space-between; align-items: center; padding: 10px 5px; cursor: pointer; width: 100%; margin-bottom: 5px; }
 .toggle-text { display: flex; flex-direction: column; }
 .toggle-title { font-weight: 600; font-size: 17px; color: #111b21; }
@@ -174,24 +187,12 @@ li.system-message {
 .switch input:checked + .slider { background-color: #00a884; }
 .switch input:checked + .slider:before { transform: translateX(22px); }
 
-/* 🌟 NEW: iOS Style Menu Buttons for Long Press */
-.menu-list { gap: 8px; }
-.menu-btn { display: flex; align-items: center; gap: 15px; padding: 14px 18px; font-size: 17px; font-weight: 600; border: none; background: #f5f6f6; color: #111b21; cursor: pointer; border-radius: 20px; transition: background 0.2s, transform 0.1s; width: 100%; }
-.menu-btn:active { background: #e4e7eb; transform: scale(0.98); }
-.menu-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; flex-shrink: 0; }
-.menu-btn.danger { color: #e53935; background: rgba(229, 57, 53, 0.05); }
-.menu-btn.danger:active { background: rgba(229, 57, 53, 0.1); }
+/* User Profile Specific Last Seen Text */
+#view-profile-last-seen { font-size: 14px; font-weight: 600; margin-bottom: 25px; color: #8696a0; }
 
-/* Input Controls (Bottom Chat Bar) */
-#chat-footer-controls { padding: 8px 10px 15px 10px; display: flex; gap: 8px; align-items: flex-end; width: 100%; background: transparent; box-sizing: border-box; }
-.input-pill { flex-grow: 1; background-color: white; border-radius: 30px; display: flex; align-items: center; padding: 5px 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); min-height: 50px; width: calc(100% - 60px); }
-.input-pill .icon-btn { color: #8696a0; font-size: 24px; padding: 6px; }
-#ghost-btn.active { color: #ff5252; background-color: rgba(255, 82, 82, 0.1); border-radius: 50%; }
-#the-chat-box { flex-grow: 1; border: none; font-size: 16.5px; outline: none; background: transparent; padding: 10px 5px; min-width: 0; }
-.circle-btn { background-color: #00a884; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 20px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 6px rgba(0,168,132,0.3); cursor: pointer; margin-bottom: 0; transition: transform 0.1s; }
-.circle-btn:active { transform: scale(0.9); }
-
-/* Lightbox */
+/* =========================================
+   🌟 UTILITIES & LIGHTBOX
+   ========================================= */
 #lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; justify-content: center; align-items: center; cursor: pointer; }
 #lightbox-img { max-width: 95%; max-height: 95%; border-radius: 12px; object-fit: contain; pointer-events: none; }
 #lightbox-close-area { position: absolute; top: 0; right: 0; width: 80px; height: 80px; display: flex; justify-content: center; align-items: center; z-index: 1001; cursor: pointer; }
@@ -204,7 +205,7 @@ li.system-message {
 @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
 
 /* =========================================
-   🌟 DEEP DARK MODE (WhatsApp Style)
+   🌟 DEEP DARK MODE (OLED BLACK)
    ========================================= */
 body.dark-mode { background: #0b141a; }
 body.dark-mode .screen { background-color: #0b141a; }
@@ -231,6 +232,7 @@ body.dark-mode .premium-input:focus, body.dark-mode .input-with-icon input:focus
     background-color: #111b21; border-color: #00a884; box-shadow: 0 4px 15px rgba(0,168,132,0.15); 
 }
 body.dark-mode .toggle-title, body.dark-mode .form-modal h3, body.dark-mode #view-profile-name { color: #e9edef; }
+body.dark-mode #view-profile-last-seen { color: #8696a0; }
 body.dark-mode .slider { background-color: #3b4a54; }
 
 /* Dark Mode Menus */
