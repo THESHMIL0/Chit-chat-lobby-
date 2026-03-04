@@ -7,6 +7,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#008069">
     <link rel="stylesheet" href="style.css">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
 </head>
 <body>
     <div id="lightbox" class="hidden">
@@ -34,10 +35,33 @@
             <span>Chats</span>
             <div>
                 <button id="theme-toggle" class="icon-btn">🌙</button>
-                <button id="show-create-room-btn" class="icon-btn">➕</button>
+                <button id="settings-btn" class="icon-btn" style="margin-left: 10px;">⋮</button>
             </div>
         </div>
         <ul id="rooms-ul"></ul>
+        <button id="show-create-room-btn" class="fab-btn">💬</button>
+    </div>
+
+    <div id="profile-screen" class="screen hidden">
+        <div class="app-header">
+            <button id="close-profile-btn" class="icon-btn" style="margin-right:10px;">⬅</button>
+            <span>Profile</span>
+        </div>
+        <div class="profile-container">
+            <div id="settings-avatar-container" onclick="document.getElementById('profile-pic-upload').click()">
+                <img id="settings-avatar-preview" src="" alt="Avatar">
+                <div class="edit-icon">📷</div>
+            </div>
+            <div class="profile-input-group">
+                <label>Name</label>
+                <input type="text" id="settings-username" autocomplete="nope" />
+            </div>
+            <div class="profile-input-group">
+                <label>About</label>
+                <input type="text" id="settings-about" autocomplete="nope" placeholder="Hey there! I am using Chit Chat." />
+            </div>
+            <button id="save-profile-btn">Save Profile</button>
+        </div>
     </div>
 
     <div id="chat-screen" class="screen hidden">
@@ -71,6 +95,16 @@
                 <input type="file" id="image-upload" accept="image/*" class="hidden" />
             </div>
             <button id="send-mic-btn" class="circle-btn">🎤</button>
+        </div>
+    </div>
+
+    <div id="view-profile-modal" class="modal hidden">
+        <div class="modal-content" style="align-items: center; text-align: center;">
+            <div class="modal-drag-pill"></div>
+            <img id="view-profile-avatar" src="" style="width:120px; height:120px; border-radius:50%; margin-bottom:10px; object-fit:cover; border: 2px solid #00a884;">
+            <h2 id="view-profile-name" style="color: #111b21; margin-bottom: 5px;"></h2>
+            <p id="view-profile-about" style="color: #667781; font-size: 15px; margin-bottom: 20px;"></p>
+            <button onclick="document.getElementById('view-profile-modal').classList.add('hidden')">Close</button>
         </div>
     </div>
 
