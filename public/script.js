@@ -4,6 +4,7 @@ const socket = io();
 const loginScreen = document.getElementById('login-screen');
 const roomListScreen = document.getElementById('room-list-screen');
 const chatScreen = document.getElementById('chat-screen');
+const profileScreen = document.getElementById('profile-screen');
 
 // Elements
 const usernameInput = document.getElementById('username-input');
@@ -20,17 +21,24 @@ const attachBtn = document.getElementById('attach-btn');
 const imageUpload = document.getElementById('image-upload');
 const replyPreviewContainer = document.getElementById('reply-preview-container');
 
+// Profile Elements
+const settingsUsername = document.getElementById('settings-username');
+const settingsAbout = document.getElementById('settings-about');
+const settingsAvatarPreview = document.getElementById('settings-avatar-preview');
+
 // Modals
 const createRoomModal = document.getElementById('create-room-modal');
 const passwordModal = document.getElementById('password-modal');
 const msgOptionsModal = document.getElementById('message-options-modal');
+const viewProfileModal = document.getElementById('view-profile-modal');
 
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
 
-let currentUser = { name: '', avatar: '' };
+// 🌟 NEW: Added "about" field to the user object
+let currentUser = { name: '', avatar: '', about: 'Hey there! I am using Chit Chat.' };
 let activeRoomId = null;
-let currentRoomPassword = ''; // 🌟 THE FIX: Save the password for reconnects
+let currentRoomPassword = ''; 
 let replyingTo = null;
 let selectedMsgId = null; 
 
@@ -44,7 +52,11 @@ lightbox.addEventListener('touchstart', closeLightbox, { passive: true });
 profilePicUpload.addEventListener('change', function() {
     if (this.files[0]) {
         const reader = new FileReader();
-        reader.onload = (e) => { currentUser.avatar = e.target.result; avatarPreview.src = e.target.result; };
+        reader.onload = (e) => { 
+            currentUser.avatar = e.target.result; 
+            avatarPreview.src = e.target.result; 
+            settingsAvatarPreview.src = e.target.result;
+        };
         reader.readAsDataURL(this.files[0]);
     }
 });
@@ -52,9 +64,32 @@ profilePicUpload.addEventListener('change', function() {
 document.getElementById('login-btn').addEventListener('click', () => {
     currentUser.name = usernameInput.value.trim();
     if (!currentUser.name) return alert('Enter a name');
-    if (!currentUser.avatar) currentUser.avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.name}`;
+    if (!currentUser.avatar) {
+        currentUser.avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.name}`;
+        settingsAvatarPreview.src = currentUser.avatar;
+    }
+    
+    settingsUsername.value = currentUser.name;
     
     loginScreen.classList.add('hidden');
+    roomListScreen.classList.remove('hidden');
+});
+
+// 🌟 NEW: Profile Settings Logic
+document.getElementById('settings-btn').addEventListener('click', () => {
+    roomListScreen.classList.add('hidden');
+    profileScreen.classList.remove('hidden');
+});
+
+document.getElementById('close-profile-btn').addEventListener('click', () => {
+    profileScreen.classList.add('hidden');
+    roomListScreen.classList.remove('hidden');
+});
+
+document.getElementById('save-profile-btn').addEventListener('click', () => {
+    if(settingsUsername.value.trim()) currentUser.name = settingsUsername.value.trim();
+    if(settingsAbout.value.trim()) currentUser.about = settingsAbout.value.trim();
+    profileScreen.classList.add('hidden');
     roomListScreen.classList.remove('hidden');
 });
 
@@ -76,6 +111,7 @@ socket.on('room list', (rooms) => {
     });
 });
 
+// Moved from header to FAB
 document.getElementById('show-create-room-btn').onclick = () => createRoomModal.classList.remove('hidden');
 document.getElementById('new-room-private').onchange = (e) => document.getElementById('new-room-pass').classList.toggle('hidden', !e.target.checked);
 
@@ -107,11 +143,8 @@ function joinRoom(roomId, password, isReconnect) {
     socket.emit('join room', { roomId, password, user: currentUser, isReconnect });
 }
 
-// 🌟 THE FIX: Auto-Reconnect Logic!
-// If your phone falls asleep and wakes up, this seamlessly puts you back in the chat.
 socket.on('connect', () => {
     if (currentUser.name && activeRoomId) {
-        console.log("Auto-reconnecting to room...");
         joinRoom(activeRoomId, currentRoomPassword, true);
     }
 });
@@ -129,6 +162,7 @@ socket.on('chat history', (data) => {
 createRoomModal.addEventListener('click', (e) => { if(e.target === createRoomModal) createRoomModal.classList.add('hidden'); });
 passwordModal.addEventListener('click', (e) => { if(e.target === passwordModal) passwordModal.classList.add('hidden'); });
 msgOptionsModal.addEventListener('click', (e) => { if(e.target === msgOptionsModal) msgOptionsModal.classList.add('hidden'); });
+viewProfileModal.addEventListener('click', (e) => { if(e.target === viewProfileModal) viewProfileModal.classList.add('hidden'); });
 
 document.getElementById('back-btn').onclick = (e) => { e.stopPropagation(); chatScreen.classList.add('hidden'); roomListScreen.classList.remove('hidden'); activeRoomId = null; };
 function updateGroupHeader(room) {
@@ -152,7 +186,8 @@ input.addEventListener('input', () => {
 function sendMessage() {
     const text = input.value.trim();
     if (text) {
-        socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), replyTo: replyingTo });
+        // 🌟 NEW: Attaching "about" so friends can view your profile!
+        socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), replyTo: replyingTo });
         input.value = ''; sendMicBtn.innerHTML = '🎤';
         replyingTo = null; replyPreviewContainer.classList.add('hidden');
     }
@@ -169,17 +204,16 @@ imageUpload.addEventListener('change', function() {
                 const canvas = document.createElement('canvas'); let w = img.width, h = img.height;
                 if(w > 600) { h *= 600/w; w = 600; } canvas.width = w; canvas.height = h;
                 canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, text: '', uploadedImage: canvas.toDataURL('image/jpeg', 0.8), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+                socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text: '', uploadedImage: canvas.toDataURL('image/jpeg', 0.8), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
                 imageUpload.value = '';
             };
         }; reader.readAsDataURL(this.files[0]);
     }
 });
 
-// Touch Gestures & Menus
 let pressTimer;
 messages.addEventListener('touchstart', (e) => {
-    if (e.target.classList.contains('chat-image')) return;
+    if (e.target.classList.contains('chat-image') || e.target.classList.contains('avatar-small')) return;
     const li = e.target.closest('li.my-message, li.other-message');
     if (!li) return;
     pressTimer = setTimeout(() => {
@@ -238,7 +272,7 @@ function displayMessage(data, isHistory) {
     let ticks = isMe ? `<span class="ticks delivered">✔✔</span>` : '';
 
     li.innerHTML = `
-        ${!isMe && !isStacked ? `<img src="${data.avatar}" class="avatar-small">` : ''}
+        ${!isMe && !isStacked ? `<img src="${data.avatar}" class="avatar-small" data-name="${data.user}" data-about="${data.about || 'Hey there! I am using Chit Chat.'}">` : ''}
         ${!isStacked ? `<span class="sender-name" style="color:${isMe ? '#00a884' : '#ea005e'}">${isMe ? 'You' : data.user}</span>` : ''}
         ${reply}
         ${content}
@@ -251,11 +285,18 @@ function displayMessage(data, isHistory) {
     messages.appendChild(li); messages.scrollTop = messages.scrollHeight;
 }
 
+// 🌟 NEW: Click an avatar to see their profile!
 document.getElementById('messages').addEventListener('click', (e) => { 
     if(e.target.classList.contains('chat-image')) { 
         document.getElementById('lightbox-img').src = e.target.src; 
         document.getElementById('lightbox').classList.remove('hidden'); 
     } 
+    if(e.target.classList.contains('avatar-small')) {
+        document.getElementById('view-profile-avatar').src = e.target.src;
+        document.getElementById('view-profile-name').textContent = e.target.dataset.name;
+        document.getElementById('view-profile-about').textContent = e.target.dataset.about;
+        viewProfileModal.classList.remove('hidden');
+    }
 });
 
 document.getElementById('theme-toggle').onclick = () => document.body.classList.toggle('dark-mode');
