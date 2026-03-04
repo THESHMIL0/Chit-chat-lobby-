@@ -6,13 +6,12 @@ const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 1e8 }); // Allow larger images
+const io = new Server(server, { maxHttpBufferSize: 1e8 }); 
 
 app.use(express.static(path.join(__dirname, 'public')));
 
 const db = new sqlite3.Database('./chat.db');
 
-// In-memory room storage (defaults to one Lobby)
 let rooms = {
     'lobby': { id: 'lobby', name: 'Lobby 😸', logo: '', isPrivate: false, password: '', pinnedMessage: null }
 };
@@ -25,7 +24,6 @@ const activeUsersById = {};
 
 io.on('connection', (socket) => {
     
-    // Send room list on connect
     socket.emit('room list', Object.values(rooms).map(r => ({ id: r.id, name: r.name, logo: r.logo, isPrivate: r.isPrivate })));
 
     socket.on('create room', (data) => {
@@ -39,21 +37,23 @@ io.on('connection', (socket) => {
         if (!room) return socket.emit('error', 'Room not found');
         if (room.isPrivate && room.password !== data.password) return socket.emit('join error', 'Incorrect Password');
 
-        // Leave previous rooms
         Array.from(socket.rooms).forEach(r => { if(r !== socket.id) socket.leave(r); });
         
         socket.join(room.id);
         const user = data.user;
         activeUsersById[socket.id] = { ...user, roomId: room.id };
 
-        // Load history for this room
+        // Load history to catch them up if they disconnected
         db.all("SELECT data FROM history WHERE roomId = ? ORDER BY timestamp ASC LIMIT 50", [room.id], (err, rows) => {
             const history = rows ? rows.map(row => JSON.parse(row.data)) : [];
             socket.emit('chat history', { room: room, history: history });
             
-            const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚀 ${user.name} joined the group` };
-            db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [sysMsg.id, room.id, Date.now(), JSON.stringify(sysMsg)]);
-            io.to(room.id).emit('chat message', sysMsg);
+            // 🌟 THE FIX: If this is an auto-reconnect, don't spam the chat with "joined"!
+            if (!data.isReconnect) {
+                const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚀 ${user.name} joined the group` };
+                db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [sysMsg.id, room.id, Date.now(), JSON.stringify(sysMsg)]);
+                io.to(room.id).emit('chat message', sysMsg);
+            }
         });
     });
 
@@ -68,7 +68,7 @@ io.on('connection', (socket) => {
 
     socket.on('chat message', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
-        if(!roomId) return;
+        if(!roomId) return; // If they lost memory, block the message
         data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
         data.type = 'chat'; data.likes = 0; data.status = 'delivered';
         
@@ -112,15 +112,13 @@ io.on('connection', (socket) => {
 
     socket.on('mark read', () => {
         const roomId = activeUsersById[socket.id]?.roomId;
-        if(roomId) io.to(roomId).emit('messages read'); // Simplification for performance
+        if(roomId) io.to(roomId).emit('messages read'); 
     });
 
     socket.on('disconnect', () => {
         const userData = activeUsersById[socket.id];
+        // We only announce they left if they don't reconnect within a few seconds (optional, keeping it simple for now)
         if (userData && userData.roomId) {
-            const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚪 ${userData.name} left` };
-            db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [sysMsg.id, userData.roomId, Date.now(), JSON.stringify(sysMsg)]);
-            io.to(userData.roomId).emit('chat message', sysMsg);
             delete activeUsersById[socket.id];
         }
     });
