@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const sqlite3 = require('sqlite3').verbose(); // 🌟 NEW: Database library!
 
 const app = express();
 const server = http.createServer(app);
@@ -9,71 +10,103 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const activeUsersById = {}; // Maps socket.id to username
-const activeUsersByName = {}; // Maps username to socket.id (for Whispers)
-const messageHistory = [];
-const MAX_HISTORY = 50; 
+// 🌟 NEW: Initialize Database
+const db = new sqlite3.Database('./chat.db');
+let messageHistory = [];
+
+db.serialize(() => {
+    // Create the table if it doesn't exist
+    db.run(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, timestamp INTEGER, data TEXT)`);
+    
+    // Load existing messages when the server starts!
+    db.all("SELECT data FROM history ORDER BY timestamp ASC LIMIT 50", (err, rows) => {
+        if (!err && rows) {
+            messageHistory = rows.map(row => JSON.parse(row.data));
+            console.log(`Loaded ${messageHistory.length} messages from database.`);
+        }
+    });
+});
+
+// Helper functions for the database
+function insertMessage(msg) {
+    messageHistory.push(msg);
+    if (messageHistory.length > 50) messageHistory.shift(); // Keep RAM light
+    db.run("INSERT INTO history (id, timestamp, data) VALUES (?, ?, ?)", [msg.id, Date.now(), JSON.stringify(msg)]);
+}
+
+function updateMessageInDB(msg) {
+    db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), msg.id]);
+}
+
+const activeUsersById = {}; 
+const activeUsersByName = {}; 
 
 io.on('connection', (socket) => {
     
     socket.on('new user', (username) => {
         activeUsersById[socket.id] = username;
-        activeUsersByName[username] = socket.id; // Save for private messages
+        activeUsersByName[username] = socket.id; 
         io.emit('user list', Object.values(activeUsersById));
         socket.emit('chat history', messageHistory);
 
         const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚀 ${username} joined the lobby` };
-        messageHistory.push(sysMsg);
-        if (messageHistory.length > MAX_HISTORY) messageHistory.shift();
+        insertMessage(sysMsg);
         io.emit('chat message', sysMsg); 
     });
 
-    // Handle normal messages
     socket.on('chat message', (data) => {
-        data.id = Date.now().toString() + Math.floor(Math.random() * 1000); // Give it a unique ID
+        data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
         data.type = 'chat'; 
-        data.likes = 0; // Start with 0 likes
+        data.likes = 0; 
+        data.status = 'delivered'; // 🌟 NEW: Default to delivered (gray ticks)
         
-        messageHistory.push(data);
-        if (messageHistory.length > MAX_HISTORY) messageHistory.shift();
+        insertMessage(data);
         io.emit('chat message', data);
     });
 
-    // 🌟 NEW: Handle Private Whispers
-    socket.on('private message', (data) => {
-        data.id = Date.now().toString() + Math.floor(Math.random() * 1000);
-        data.type = 'private';
-        data.likes = 0;
-        
-        const targetSocketId = activeUsersByName[data.toUser];
-        if (targetSocketId) {
-            io.to(targetSocketId).emit('chat message', data); // Send to receiver
-            socket.emit('chat message', data); // Send copy to sender
-        } else {
-            socket.emit('chat message', { type: 'system', text: `❌ User ${data.toUser} is not online.` });
+    // 🌟 NEW: When a user looks at the screen, mark messages as read!
+    socket.on('mark read', () => {
+        let updated = false;
+        messageHistory.forEach(msg => {
+            if (msg.user !== activeUsersById[socket.id] && msg.status === 'delivered') {
+                msg.status = 'read';
+                updateMessageInDB(msg); // Save blue ticks to DB
+                updated = true;
+            }
+        });
+        if (updated) {
+            io.emit('messages read'); // Tell everyone to turn ticks blue
         }
     });
 
-    // 🌟 NEW: Handle Message Likes
+    socket.on('private message', (data) => {
+        data.id = Date.now().toString() + Math.floor(Math.random() * 1000);
+        data.type = 'private'; data.likes = 0; data.status = 'delivered';
+        const targetSocketId = activeUsersByName[data.toUser];
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('chat message', data); 
+            socket.emit('chat message', data); 
+        } else {
+            socket.emit('chat message', { id: Date.now().toString(), type: 'system', text: `❌ User ${data.toUser} is not online.` });
+        }
+    });
+
     socket.on('like message', (msgId) => {
         const msg = messageHistory.find(m => m.id === msgId);
         if (msg) {
             msg.likes += 1;
+            updateMessageInDB(msg); // Save likes to DB
             io.emit('update likes', { id: msgId, likes: msg.likes });
         }
     });
 
-    socket.on('typing', (data) => {
-        socket.broadcast.emit('typing', data);
-    });
+    socket.on('typing', (data) => { socket.broadcast.emit('typing', data); });
 
     socket.on('disconnect', () => {
         const username = activeUsersById[socket.id];
         if (username) {
             const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚪 ${username} left the lobby` };
-            messageHistory.push(sysMsg);
-            if (messageHistory.length > MAX_HISTORY) messageHistory.shift();
-            
+            insertMessage(sysMsg);
             delete activeUsersById[socket.id];
             delete activeUsersByName[username];
             io.emit('user list', Object.values(activeUsersById));
@@ -83,6 +116,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+server.listen(PORT, () => { console.log(`Server is running on port ${PORT}`); });
