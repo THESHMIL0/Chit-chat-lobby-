@@ -20,8 +20,8 @@ const imageUpload = document.getElementById('image-upload');
 const replyPreviewContainer = document.getElementById('reply-preview-container');
 const replyPreviewText = document.getElementById('reply-preview-text');
 const cancelReplyBtn = document.getElementById('cancel-reply-btn');
-const searchInput = document.getElementById('search-input'); // 🌟 NEW
-const pinnedBanner = document.getElementById('pinned-banner'); // 🌟 NEW
+const searchInput = document.getElementById('search-input'); 
+const pinnedBanner = document.getElementById('pinned-banner'); 
 const pinnedUser = document.getElementById('pinned-user'); 
 const pinnedText = document.getElementById('pinned-text'); 
 const unpinBtn = document.getElementById('unpin-btn'); 
@@ -30,7 +30,6 @@ const notifySound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/
 
 let username = ""; let userColor = ""; let avatarUrl = ""; let replyingTo = null; 
 
-// 🌟 NEW: Realtime Search Filter
 searchInput.addEventListener('input', (e) => {
     const searchTerm = e.target.value.toLowerCase();
     Array.from(messages.children).forEach(msg => {
@@ -45,7 +44,6 @@ searchInput.addEventListener('input', (e) => {
     });
 });
 
-// 🌟 NEW: Unpin button
 unpinBtn.addEventListener('click', () => socket.emit('unpin message'));
 
 socket.on('pinned updated', (pinnedMsg) => {
@@ -122,7 +120,6 @@ messages.addEventListener('click', (e) => {
         if (confirm("Delete this message for everyone?")) socket.emit('delete message', e.target.closest('.msg-delete-btn').dataset.id);
         return; 
     }
-    // 🌟 NEW: Handle Pin Button Click
     if (e.target.closest('.msg-pin-btn')) {
         const li = e.target.closest('li');
         const sender = li.querySelector('.sender-name').textContent;
@@ -157,7 +154,6 @@ loginForm.addEventListener('submit', (e) => {
         socket.emit('new user', username);
         setTimeout(() => socket.emit('mark read'), 500); 
         
-        // 🌟 NEW: Request System Notification Permissions!
         if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
             Notification.requestPermission();
         }
@@ -211,11 +207,21 @@ function displayMessage(data, isHistory = false) {
 
     const isMe = data.user === username;
     
-    // 🌟 NEW: Trigger a system push notification if you are tabbed out!
+    // 🌟 THE FIX: Wrapped the Notification code in a safe try...catch block
     if (!isMe && !isHistory) {
         notifySound.play().catch(() => {});
         if (!document.hasFocus() && "Notification" in window && Notification.permission === "granted") {
-            new Notification(`New message from ${data.user}`, { body: data.text || "Sent an attachment" });
+            try {
+                if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+                    navigator.serviceWorker.ready.then(function(registration) {
+                        registration.showNotification(`New message from ${data.user}`, { body: data.text || "Sent an attachment" });
+                    }).catch(() => {});
+                } else {
+                    new Notification(`New message from ${data.user}`, { body: data.text || "Sent an attachment" });
+                }
+            } catch (err) {
+                console.log("Silent notification failure:", err);
+            }
         }
     }
 
@@ -235,7 +241,6 @@ function displayMessage(data, isHistory = false) {
     let replyHTML = ''; if (data.replyTo) { replyHTML = `<div class="replied-to"><div class="replied-to-user">${escapeHTML(data.replyTo.user)}</div><div class="replied-to-text">${escapeHTML(data.replyTo.text).substring(0, 40)}...</div></div>`; }
 
     let ticksHTML = ''; let deleteBtnHTML = ''; 
-    // 🌟 NEW: Pin button HTML
     let pinBtnHTML = `<button class="msg-pin-btn" data-id="${data.id}">📌</button>`;
     
     if (isMe && data.type !== 'private') {
