@@ -24,7 +24,7 @@ const imageUpload = document.getElementById('image-upload');
 const replyPreviewContainer = document.getElementById('reply-preview-container');
 const ghostBtn = document.getElementById('ghost-btn'); 
 
-// 🌟 NEW POLL ELEMENTS
+// 🌟 POLL ELEMENTS
 const pollBtn = document.getElementById('poll-btn');
 const createPollModal = document.getElementById('create-poll-modal');
 const addPollOptBtn = document.getElementById('add-poll-opt-btn');
@@ -35,7 +35,7 @@ const pollOptionsContainer = document.getElementById('poll-options-container');
 const settingsUsername = document.getElementById('settings-username');
 const settingsAbout = document.getElementById('settings-about');
 const settingsAvatarPreview = document.getElementById('settings-avatar-preview');
-const settingsBubbleColor = document.getElementById('settings-bubble-color'); // 🌟 COLOR PICKER
+const settingsBubbleColor = document.getElementById('settings-bubble-color');
 
 const createRoomModal = document.getElementById('create-room-modal');
 const passwordModal = document.getElementById('password-modal');
@@ -51,7 +51,6 @@ const wallpaperUpload = document.getElementById('wallpaper-upload');
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
 
-// 🌟 Default bubble color added
 let currentUser = { name: '', avatar: '', about: 'Hey there! I am using Chit Chat.', color: '#dcf8c6' }; 
 let activeRoomId = null;
 let currentRoomPassword = ''; 
@@ -103,7 +102,7 @@ document.getElementById('close-profile-btn').onclick = () => { profileScreen.cla
 document.getElementById('save-profile-btn').onclick = () => {
     if(settingsUsername.value.trim()) currentUser.name = settingsUsername.value.trim();
     if(settingsAbout.value.trim()) currentUser.about = settingsAbout.value.trim();
-    currentUser.color = settingsBubbleColor.value; // 🌟 SAVE CUSTOM COLOR!
+    currentUser.color = settingsBubbleColor.value; 
     socket.emit('update profile', currentUser);
     profileScreen.classList.add('hidden'); roomListScreen.classList.remove('hidden');
 };
@@ -312,7 +311,7 @@ chatSearchInput.addEventListener('input', (e) => {
 
 ghostBtn.onclick = () => { isGhostMode = !isGhostMode; ghostBtn.classList.toggle('active', isGhostMode); };
 
-// 🌟 NEW: Poll Logic
+// 🌟 NEW: Poll Creation Logic
 pollBtn.onclick = () => createPollModal.classList.remove('hidden');
 addPollOptBtn.onclick = () => {
     const input = document.createElement('input');
@@ -348,7 +347,7 @@ function sendMessage() {
         input.value = ''; sendMicBtn.innerHTML = '🎤'; replyingTo = null; replyPreviewContainer.classList.add('hidden');
     }
 }
-sendMicBtn.addEventListener('click', sendMessage);
+
 input.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
 
 // Video & Image Engine
@@ -382,7 +381,7 @@ imageUpload.addEventListener('change', function() {
 });
 let pressTimer;
 messages.addEventListener('touchstart', (e) => {
-    if (e.target.closest('.poll-card') || e.target.classList.contains('chat-image') || e.target.classList.contains('chat-video') || e.target.classList.contains('avatar-small')) return;
+    if (e.target.closest('.poll-card') || e.target.classList.contains('chat-image') || e.target.classList.contains('chat-video') || e.target.classList.contains('chat-audio') || e.target.classList.contains('avatar-small')) return;
     const li = e.target.closest('li.my-message, li.other-message');
     if (!li) return;
     pressTimer = setTimeout(() => {
@@ -395,13 +394,13 @@ messages.addEventListener('touchstart', (e) => {
 messages.addEventListener('touchend', () => clearTimeout(pressTimer));
 messages.addEventListener('touchmove', () => clearTimeout(pressTimer));
 
-// 🌟 NEW: Swipe to Reply Gesture Engine
+// 🌟 Swipe to Reply Gesture Engine
 let touchStartX = 0;
 let touchCurrentX = 0;
 let swipedElement = null;
 
 messages.addEventListener('touchstart', (e) => {
-    if (e.target.closest('.poll-card') || e.target.classList.contains('chat-image') || e.target.classList.contains('chat-video')) return;
+    if (e.target.closest('.poll-card') || e.target.classList.contains('chat-image') || e.target.classList.contains('chat-video') || e.target.classList.contains('chat-audio')) return;
     const li = e.target.closest('li.my-message, li.other-message');
     if (!li) return;
     touchStartX = e.touches[0].clientX;
@@ -413,7 +412,7 @@ messages.addEventListener('touchmove', (e) => {
     if (!swipedElement) return;
     touchCurrentX = e.touches[0].clientX;
     const diffX = touchCurrentX - touchStartX;
-    if (diffX > 10 && diffX < 80) swipedElement.style.transform = `translateX(${diffX}px)`; // Swipe Right
+    if (diffX > 10 && diffX < 80) swipedElement.style.transform = `translateX(${diffX}px)`; 
 }, { passive: true });
 
 messages.addEventListener('touchend', () => {
@@ -422,11 +421,11 @@ messages.addEventListener('touchend', () => {
     swipedElement.style.transition = 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)';
     swipedElement.style.transform = `translateX(0px)`;
     
-    if (diffX > 50) { // Trigger the Reply!
+    if (diffX > 50) { 
         if (navigator.vibrate) navigator.vibrate(50);
         const li = swipedElement;
         selectedMsgId = li.id.replace('msg-', '');
-        replyingTo = { user: li.dataset.sender, text: li.querySelector('.message-text')?.innerText || (li.querySelector('.poll-question') ? '📊 Poll' : 'Attachment') };
+        replyingTo = { user: li.dataset.sender, text: li.querySelector('.message-text')?.innerText || (li.querySelector('.poll-question') ? '📊 Poll' : (li.querySelector('.chat-audio') ? '🎤 Voice Note' : 'Attachment')) };
         document.getElementById('reply-preview-text').innerHTML = `<b style="color: #00a884; font-size: 13px;">${escapeHTML(replyingTo.user)}</b><br><span style="color: #54656f; font-size: 13px;">${escapeHTML(replyingTo.text).substring(0,40)}...</span>`;
         replyPreviewContainer.classList.remove('hidden'); input.focus();
     }
@@ -464,7 +463,7 @@ socket.on('chat message', (data) => {
     if (data.user !== currentUser.name && document.hidden) {
         if ("Notification" in window && Notification.permission === "granted") {
             const notif = new Notification(data.user + " in " + currentRoomName.textContent, {
-                body: data.text || (data.isVideo ? "🎥 Sent a video" : (data.poll ? "📊 Sent a poll" : "📸 Sent an image")),
+                body: data.text || (data.isAudio ? "🎤 Sent a voice note" : (data.isVideo ? "🎥 Sent a video" : (data.poll ? "📊 Sent a poll" : "📸 Sent an image"))),
                 icon: data.avatar, badge: data.avatar, vibrate: [200, 100, 200]
             });
             notif.onclick = () => { window.focus(); notif.close(); };
@@ -473,7 +472,6 @@ socket.on('chat message', (data) => {
     if (!document.hidden && activeRoomId && data.user !== currentUser.name) socket.emit('mark read');
 });
 
-// 🌟 NEW: Live Poll Update Listener
 socket.on('poll updated', (updatedMsg) => {
     if (updatedMsg.roomId && updatedMsg.roomId !== activeRoomId) return;
     const li = document.getElementById(`msg-${updatedMsg.id}`);
@@ -485,9 +483,7 @@ socket.on('poll updated', (updatedMsg) => {
 });
 
 socket.on('messages read', () => {
-    document.querySelectorAll('.ticks.delivered').forEach(el => {
-        el.classList.remove('delivered'); el.classList.add('read');
-    });
+    document.querySelectorAll('.ticks.delivered').forEach(el => { el.classList.remove('delivered'); el.classList.add('read'); });
 });
 
 socket.on('update likes', (data) => { const l = document.getElementById(`like-count-${data.id}`); if(l) l.textContent = data.likes > 0 ? data.likes : ''; });
@@ -498,28 +494,29 @@ socket.on('message edited', (data) => {
     if (el) { const textNode = el.querySelector('.message-text'); textNode.innerHTML = escapeHTML(data.newText) + `<span class="edited-tag">(edited)</span>`; }
 });
 
-// 🌟 HTML Generator for Messages (Used for new messages AND updating live polls)
+// 🌟 HTML Generator for Messages (Updated for Polls & Audio!)
 function getMessageInnerHTML(data, isMe, isStacked) {
     let contentText = escapeHTML(data.text);
     if(data.isEdited) contentText += `<span class="edited-tag">(edited)</span>`;
     
     let content = '';
-    // 1. Check for Polls
+    // 1. Check for Polls (FIXED: Using Data Attributes safely)
     if (data.poll) {
         let totalVotes = data.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0);
         let pollOptsHTML = data.poll.options.map((opt, idx) => {
             let percent = totalVotes > 0 ? Math.round((opt.votes.length / totalVotes) * 100) : 0;
             let hasVoted = opt.votes.includes(currentUser.name);
-            return `<button class="poll-option-btn" onclick="socket.emit('vote poll', {msgId: '${data.id}', optionIndex: ${idx}})">
+            return `<button class="poll-option-btn" data-msgid="${data.id}" data-optidx="${idx}">
                 <div class="poll-bar" style="width: ${percent}%;"></div>
                 <div class="poll-text-row"><span>${hasVoted ? '✅ ' : ''}${escapeHTML(opt.text)}</span><span>${percent}%</span></div>
             </button>`;
         }).join('');
         content = `<div class="poll-card"><div class="poll-question">📊 ${escapeHTML(data.poll.question)}</div>${pollOptsHTML}</div>`;
     } 
-    // 2. Check for Images/Videos
+    // 2. Check for Audio/Images/Videos
     else if (data.uploadedImage) {
-        if (data.isVideo) content = `<video src="${data.uploadedImage}" class="chat-video" controls playsinline></video>`;
+        if (data.isAudio) content = `<audio src="${data.uploadedImage}" class="chat-audio" controls></audio>`;
+        else if (data.isVideo) content = `<video src="${data.uploadedImage}" class="chat-video" controls playsinline></video>`;
         else content = `<img src="${data.uploadedImage}" class="chat-image">`;
     } 
     // 3. Regular Text
@@ -527,7 +524,6 @@ function getMessageInnerHTML(data, isMe, isStacked) {
         content = `<span class="message-text">${contentText}</span>`;
     }
 
-    // 🌟 LINK PREVIEWS!
     if (data.linkPreview) {
         content += `<a href="${escapeHTML(data.linkPreview.url)}" target="_blank" class="link-preview-card">
             ${data.linkPreview.img ? `<img src="${escapeHTML(data.linkPreview.img)}" class="link-preview-img" style="display:block;">` : ''}
@@ -569,8 +565,6 @@ function displayMessage(data, isHistory) {
     li.className = isMe ? 'my-message' : 'other-message';
     if(isStacked) li.classList.add('stacked');
     if(data.isGhost) li.classList.add('ghost-message');
-
-    // Apply the custom Bubble Color if one was provided
     if (data.color) li.style.setProperty('--bubble-color', data.color);
 
     li.innerHTML = getMessageInnerHTML(data, isMe, isStacked);
@@ -581,7 +575,14 @@ function displayMessage(data, isHistory) {
     }
 }
 
+// 🌟 Poll Voting & Image Lightbox Logic
 document.getElementById('messages').addEventListener('click', (e) => { 
+    const pollOpt = e.target.closest('.poll-option-btn');
+    if (pollOpt) {
+        socket.emit('vote poll', { msgId: pollOpt.dataset.msgid, optionIndex: parseInt(pollOpt.dataset.optidx) });
+        return;
+    }
+
     if(e.target.classList.contains('chat-image')) { document.getElementById('lightbox-img').src = e.target.src; document.getElementById('lightbox').classList.remove('hidden'); } 
     if(e.target.classList.contains('avatar-small')) {
         const friendName = e.target.dataset.name;
@@ -591,3 +592,52 @@ document.getElementById('messages').addEventListener('click', (e) => {
 });
 
 document.getElementById('theme-toggle').onclick = () => document.body.classList.toggle('dark-mode');
+
+// 🎤 THE BRAND NEW VOICE NOTE ENGINE
+let mediaRecorder;
+let audioChunks = [];
+let isRecording = false;
+
+async function startRecording(e) {
+    if (input.value.trim()) { sendMessage(); return; } 
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = event => {
+            if (event.data.size > 0) audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, color: currentUser.color, text: '', uploadedImage: event.target.result, isAudio: true, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
+            };
+            reader.readAsDataURL(audioBlob);
+            audioChunks = [];
+            stream.getTracks().forEach(track => track.stop()); 
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        sendMicBtn.classList.add('recording-pulse');
+        
+    } catch(err) {
+        alert("Please allow Microphone access to send Voice Notes! 🎤");
+    }
+}
+
+function stopRecording() {
+    if (isRecording && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        isRecording = false;
+        sendMicBtn.classList.remove('recording-pulse');
+    }
+}
+
+sendMicBtn.addEventListener('mousedown', startRecording);
+sendMicBtn.addEventListener('touchstart', startRecording, { passive: true });
+window.addEventListener('mouseup', stopRecording);
+window.addEventListener('touchend', stopRecording);
