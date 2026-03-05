@@ -300,3 +300,6 @@ body.dark-mode .my-message .replied-to-user { color: #00a884; }
 body.dark-mode .replied-to-text { color: rgba(255, 255, 255, 0.7); }
 body.dark-mode .typing-text-active { color: #25D366 !important; }
 body.dark-mode #reply-preview-container { background-color: rgba(32, 44, 51, 0.95); }
+/* 🌟 Video Player Bubble Styles */
+.chat-video { max-width: 100%; border-radius: 8px; margin-top: 5px; outline: none; background: black; }
+.my-message .chat-video { box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
