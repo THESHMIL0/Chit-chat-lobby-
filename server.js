@@ -18,7 +18,6 @@ let rooms = {
 
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, roomId TEXT, timestamp INTEGER, data TEXT)`);
-    // 🌟 NEW: A dedicated table to remember users and their Last Seen times!
     db.run(`CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY, avatar TEXT, about TEXT, isOnline INTEGER, lastSeen INTEGER)`);
 });
 
@@ -50,7 +49,6 @@ io.on('connection', (socket) => {
         socket.join(room.id);
         activeUsersById[socket.id] = { ...data.user, roomId: room.id };
 
-        // 🌟 NEW: Save user to database and mark them ONLINE
         db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen) VALUES (?, ?, ?, ?, ?)", 
             [data.user.name, data.user.avatar, data.user.about, 1, Date.now()]);
 
@@ -67,7 +65,6 @@ io.on('connection', (socket) => {
         });
     });
 
-    // 🌟 NEW: Update profile instantly in DB when they save settings
     socket.on('update profile', (user) => {
         if(activeUsersById[socket.id]) {
             activeUsersById[socket.id].name = user.name;
@@ -78,7 +75,6 @@ io.on('connection', (socket) => {
             [user.name, user.avatar, user.about, 1, Date.now()]);
     });
 
-    // 🌟 NEW: Fetch user data for the Profile Modal
     socket.on('get user info', (username) => {
         db.get("SELECT * FROM users WHERE name = ?", [username], (err, row) => {
             if (row) socket.emit('user info result', row);
@@ -124,6 +120,14 @@ io.on('connection', (socket) => {
         });
     });
 
+    // 🌟 NEW: Listen for typing and broadcast to the room!
+    socket.on('typing', (isTyping) => {
+        const roomId = activeUsersById[socket.id]?.roomId;
+        if(roomId) {
+            socket.to(roomId).emit('user typing', { name: activeUsersById[socket.id].name, isTyping });
+        }
+    });
+
     socket.on('like message', (msgId) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return;
@@ -166,12 +170,12 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         const userData = activeUsersById[socket.id];
         if (userData) {
-            // 🌟 NEW: Mark user as OFFLINE and save exact time
             db.run(`UPDATE users SET isOnline = 0, lastSeen = ? WHERE name = ?`, [Date.now(), userData.name]);
-            
             if (userData.roomId) {
                 delete activeUsersById[socket.id];
                 io.to(userData.roomId).emit('room users', getUsersInRoom(userData.roomId));
+                // Clear their typing status if they close the app while typing
+                io.to(userData.roomId).emit('user typing', { name: userData.name, isTyping: false });
             }
         }
     });
