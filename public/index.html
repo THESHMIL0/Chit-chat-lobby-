@@ -61,6 +61,11 @@
                     <label>ℹ️ About</label>
                     <input type="text" id="settings-about" autocomplete="nope" placeholder="Hey there! I am using Chit Chat." />
                 </div>
+                <div class="profile-divider"></div>
+                <div class="profile-input-group" style="display:flex; justify-content:space-between; align-items:center;">
+                    <label style="margin-bottom: 0;">🎨 Chat Bubble Color</label>
+                    <input type="color" id="settings-bubble-color" value="#dcf8c6" style="width: 45px; height: 45px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 50%;">
+                </div>
             </div>
             <button id="save-profile-btn">Save Profile</button>
         </div>
@@ -97,7 +102,7 @@
 
         <div id="chat-footer-controls">
             <div class="input-pill">
-                <button id="emoji-btn" class="icon-btn">😀</button>
+                <button id="poll-btn" class="icon-btn" style="font-size: 19px;">📊</button>
                 <input id="the-chat-box" type="text" autocomplete="nope" spellcheck="false" placeholder="Message" />
                 <button id="attach-btn" class="icon-btn">📎</button>
                 <input type="file" id="image-upload" accept="image/*, video/mp4, video/webm, image/gif" class="hidden" />
@@ -129,6 +134,20 @@
                 <button id="btn-reset-wallpaper" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Reset Wallpaper</button>
                 <input type="file" id="wallpaper-upload" accept="image/*" class="hidden">
             </div>
+        </div>
+    </div>
+
+    <div id="create-poll-modal" class="modal hidden">
+        <div class="modal-content form-modal">
+            <div class="modal-drag-pill"></div>
+            <h3>Create a Poll 📊</h3>
+            <input type="text" id="poll-question" class="premium-input" placeholder="Ask a question..." style="margin-top:15px; margin-bottom: 15px;">
+            <div id="poll-options-container" style="display:flex; flex-direction:column; gap:8px;">
+                <input type="text" class="premium-input poll-opt-input" placeholder="Option 1" style="margin-bottom:0;">
+                <input type="text" class="premium-input poll-opt-input" placeholder="Option 2" style="margin-bottom:0;">
+            </div>
+            <button id="add-poll-opt-btn" class="menu-btn" style="color:#00a884; justify-content:center; margin-top:10px; border:1px dashed rgba(0,168,132,0.3); border-radius:15px;">➕ Add Option</button>
+            <button id="send-poll-btn" class="primary-btn" style="margin-top:15px;">Send Poll</button>
         </div>
     </div>
 
