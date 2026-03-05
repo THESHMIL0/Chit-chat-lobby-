@@ -24,9 +24,18 @@ const imageUpload = document.getElementById('image-upload');
 const replyPreviewContainer = document.getElementById('reply-preview-container');
 const ghostBtn = document.getElementById('ghost-btn'); 
 
+// 🌟 NEW POLL ELEMENTS
+const pollBtn = document.getElementById('poll-btn');
+const createPollModal = document.getElementById('create-poll-modal');
+const addPollOptBtn = document.getElementById('add-poll-opt-btn');
+const sendPollBtn = document.getElementById('send-poll-btn');
+const pollQuestion = document.getElementById('poll-question');
+const pollOptionsContainer = document.getElementById('poll-options-container');
+
 const settingsUsername = document.getElementById('settings-username');
 const settingsAbout = document.getElementById('settings-about');
 const settingsAvatarPreview = document.getElementById('settings-avatar-preview');
+const settingsBubbleColor = document.getElementById('settings-bubble-color'); // 🌟 COLOR PICKER
 
 const createRoomModal = document.getElementById('create-room-modal');
 const passwordModal = document.getElementById('password-modal');
@@ -42,7 +51,8 @@ const wallpaperUpload = document.getElementById('wallpaper-upload');
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
 
-let currentUser = { name: '', avatar: '', about: 'Hey there! I am using Chit Chat.' };
+// 🌟 Default bubble color added
+let currentUser = { name: '', avatar: '', about: 'Hey there! I am using Chit Chat.', color: '#dcf8c6' }; 
 let activeRoomId = null;
 let currentRoomPassword = ''; 
 let replyingTo = null;
@@ -93,6 +103,7 @@ document.getElementById('close-profile-btn').onclick = () => { profileScreen.cla
 document.getElementById('save-profile-btn').onclick = () => {
     if(settingsUsername.value.trim()) currentUser.name = settingsUsername.value.trim();
     if(settingsAbout.value.trim()) currentUser.about = settingsAbout.value.trim();
+    currentUser.color = settingsBubbleColor.value; // 🌟 SAVE CUSTOM COLOR!
     socket.emit('update profile', currentUser);
     profileScreen.classList.add('hidden'); roomListScreen.classList.remove('hidden');
 };
@@ -192,16 +203,15 @@ socket.on('user typing', (data) => {
     updateHeaderSubtitle();
 });
 // Modals closing logic
-[createRoomModal, passwordModal, msgOptionsModal, viewProfileModal, groupInfoModal].forEach(modal => {
+[createRoomModal, passwordModal, msgOptionsModal, viewProfileModal, groupInfoModal, createPollModal].forEach(modal => {
     modal.addEventListener('click', (e) => { if(e.target === modal) modal.classList.add('hidden'); });
 });
 
-// 🌟 FIX: Tell the server we are actually leaving the room!
 document.getElementById('back-btn').onclick = (e) => { 
     e.stopPropagation(); 
     chatScreen.classList.add('hidden'); 
     roomListScreen.classList.remove('hidden'); 
-    socket.emit('leave room'); // <--- THE MAGIC BULLET 🔫
+    socket.emit('leave room'); 
     activeRoomId = null; 
     isGhostMode = false; 
     ghostBtn.classList.remove('active'); 
@@ -282,12 +292,10 @@ chatSearchInput.addEventListener('input', (e) => {
     
     allMsgs.forEach(li => {
         if(li.classList.contains('system-message')) { li.style.display = query ? 'none' : 'flex'; return; }
-        
         const textNode = li.querySelector('.message-text');
         if(!textNode) return; 
         
         let rawText = textNode.textContent.replace('(edited)', '').trim();
-        
         if (query === '') {
             li.style.display = 'flex';
             textNode.innerHTML = escapeHTML(rawText) + (li.innerHTML.includes('(edited)') ? `<span class="edited-tag">(edited)</span>` : '');
@@ -304,6 +312,26 @@ chatSearchInput.addEventListener('input', (e) => {
 
 ghostBtn.onclick = () => { isGhostMode = !isGhostMode; ghostBtn.classList.toggle('active', isGhostMode); };
 
+// 🌟 NEW: Poll Logic
+pollBtn.onclick = () => createPollModal.classList.remove('hidden');
+addPollOptBtn.onclick = () => {
+    const input = document.createElement('input');
+    input.type = 'text'; input.className = 'premium-input poll-opt-input'; input.placeholder = 'Another Option'; input.style.marginBottom = '0';
+    pollOptionsContainer.appendChild(input);
+};
+
+sendPollBtn.onclick = () => {
+    const q = pollQuestion.value.trim();
+    const opts = Array.from(document.querySelectorAll('.poll-opt-input')).map(i => i.value.trim()).filter(v => v);
+    if(q && opts.length >= 2) {
+        const pollData = { question: q, options: opts.map(o => ({ text: o, votes: [] })) };
+        socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, color: currentUser.color, text: '', poll: pollData, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
+        createPollModal.classList.add('hidden');
+        pollQuestion.value = '';
+        pollOptionsContainer.innerHTML = '<input type="text" class="premium-input poll-opt-input" placeholder="Option 1" style="margin-bottom:0;"><input type="text" class="premium-input poll-opt-input" placeholder="Option 2" style="margin-bottom:0;">';
+    } else { alert('Enter a question and at least 2 options!'); }
+};
+
 input.addEventListener('input', () => { 
     if(editingMsgId) sendMicBtn.innerHTML = '✔'; else sendMicBtn.innerHTML = input.value.trim() ? '➤' : '🎤'; 
     socket.emit('typing', true);
@@ -316,14 +344,14 @@ function sendMessage() {
     if (text) {
         socket.emit('typing', false); 
         if (editingMsgId) { socket.emit('edit message', { msgId: editingMsgId, newText: text }); editingMsgId = null;
-        } else { socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), replyTo: replyingTo, isGhost: isGhostMode }); }
+        } else { socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, color: currentUser.color, text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), replyTo: replyingTo, isGhost: isGhostMode }); }
         input.value = ''; sendMicBtn.innerHTML = '🎤'; replyingTo = null; replyPreviewContainer.classList.add('hidden');
     }
 }
 sendMicBtn.addEventListener('click', sendMessage);
 input.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
 
-// 🌟 VIDEO & GIF SUPPORT ENGINE
+// Video & Image Engine
 attachBtn.onclick = () => imageUpload.click();
 imageUpload.addEventListener('change', function() {
     if (this.files[0]) {
@@ -331,23 +359,20 @@ imageUpload.addEventListener('change', function() {
         const reader = new FileReader(); 
         reader.onload = (e) => {
             const fileData = e.target.result;
-            
             if (file.type.startsWith('video/')) {
                 if (file.size > 20 * 1024 * 1024) return alert('Video is too large! Limit is 20MB.');
-                socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text: '', uploadedImage: fileData, isVideo: true, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
+                socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, color: currentUser.color, text: '', uploadedImage: fileData, isVideo: true, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
                 imageUpload.value = '';
-            } 
-            else if (file.type === 'image/gif') {
-                socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text: '', uploadedImage: fileData, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
+            } else if (file.type === 'image/gif') {
+                socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, color: currentUser.color, text: '', uploadedImage: fileData, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
                 imageUpload.value = '';
-            } 
-            else {
+            } else {
                 const img = new Image(); img.src = fileData;
                 img.onload = () => {
                     const canvas = document.createElement('canvas'); let w = img.width, h = img.height;
                     if(w > 600) { h *= 600/w; w = 600; } canvas.width = w; canvas.height = h;
                     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text: '', uploadedImage: canvas.toDataURL('image/jpeg', 0.8), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
+                    socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, color: currentUser.color, text: '', uploadedImage: canvas.toDataURL('image/jpeg', 0.8), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
                     imageUpload.value = '';
                 };
             }
@@ -355,10 +380,9 @@ imageUpload.addEventListener('change', function() {
         reader.readAsDataURL(file);
     }
 });
-
 let pressTimer;
 messages.addEventListener('touchstart', (e) => {
-    if (e.target.classList.contains('chat-image') || e.target.classList.contains('avatar-small') || e.target.classList.contains('chat-video')) return;
+    if (e.target.closest('.poll-card') || e.target.classList.contains('chat-image') || e.target.classList.contains('chat-video') || e.target.classList.contains('avatar-small')) return;
     const li = e.target.closest('li.my-message, li.other-message');
     if (!li) return;
     pressTimer = setTimeout(() => {
@@ -370,6 +394,44 @@ messages.addEventListener('touchstart', (e) => {
 }, { passive: true });
 messages.addEventListener('touchend', () => clearTimeout(pressTimer));
 messages.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+// 🌟 NEW: Swipe to Reply Gesture Engine
+let touchStartX = 0;
+let touchCurrentX = 0;
+let swipedElement = null;
+
+messages.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.poll-card') || e.target.classList.contains('chat-image') || e.target.classList.contains('chat-video')) return;
+    const li = e.target.closest('li.my-message, li.other-message');
+    if (!li) return;
+    touchStartX = e.touches[0].clientX;
+    swipedElement = li;
+    swipedElement.style.transition = 'none';
+}, { passive: true });
+
+messages.addEventListener('touchmove', (e) => {
+    if (!swipedElement) return;
+    touchCurrentX = e.touches[0].clientX;
+    const diffX = touchCurrentX - touchStartX;
+    if (diffX > 10 && diffX < 80) swipedElement.style.transform = `translateX(${diffX}px)`; // Swipe Right
+}, { passive: true });
+
+messages.addEventListener('touchend', () => {
+    if (!swipedElement) return;
+    const diffX = touchCurrentX - touchStartX;
+    swipedElement.style.transition = 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)';
+    swipedElement.style.transform = `translateX(0px)`;
+    
+    if (diffX > 50) { // Trigger the Reply!
+        if (navigator.vibrate) navigator.vibrate(50);
+        const li = swipedElement;
+        selectedMsgId = li.id.replace('msg-', '');
+        replyingTo = { user: li.dataset.sender, text: li.querySelector('.message-text')?.innerText || (li.querySelector('.poll-question') ? '📊 Poll' : 'Attachment') };
+        document.getElementById('reply-preview-text').innerHTML = `<b style="color: #00a884; font-size: 13px;">${escapeHTML(replyingTo.user)}</b><br><span style="color: #54656f; font-size: 13px;">${escapeHTML(replyingTo.text).substring(0,40)}...</span>`;
+        replyPreviewContainer.classList.remove('hidden'); input.focus();
+    }
+    swipedElement = null; touchStartX = 0; touchCurrentX = 0;
+});
 
 document.getElementById('opt-delete').onclick = () => { socket.emit('delete message', selectedMsgId); msgOptionsModal.classList.add('hidden'); };
 document.getElementById('opt-like').onclick = () => { socket.emit('like message', selectedMsgId); msgOptionsModal.classList.add('hidden'); };
@@ -396,33 +458,35 @@ socket.on('pinned updated', (pinnedMsg) => {
 });
 
 socket.on('chat message', (data) => {
-    // 🌟 FIX: Bulletproof Check! Only show messages meant for THIS specific room!
     if (data.roomId && data.roomId !== activeRoomId) return;
-
     displayMessage(data, false);
     
-    // NATIVE PHONE NOTIFICATION 
     if (data.user !== currentUser.name && document.hidden) {
         if ("Notification" in window && Notification.permission === "granted") {
             const notif = new Notification(data.user + " in " + currentRoomName.textContent, {
-                body: data.text || (data.isVideo ? "🎥 Sent a video" : "📸 Sent an image"),
-                icon: data.avatar,
-                badge: data.avatar,
-                vibrate: [200, 100, 200]
+                body: data.text || (data.isVideo ? "🎥 Sent a video" : (data.poll ? "📊 Sent a poll" : "📸 Sent an image")),
+                icon: data.avatar, badge: data.avatar, vibrate: [200, 100, 200]
             });
             notif.onclick = () => { window.focus(); notif.close(); };
         }
     }
-    
-    if (!document.hidden && activeRoomId && data.user !== currentUser.name) {
-        socket.emit('mark read');
+    if (!document.hidden && activeRoomId && data.user !== currentUser.name) socket.emit('mark read');
+});
+
+// 🌟 NEW: Live Poll Update Listener
+socket.on('poll updated', (updatedMsg) => {
+    if (updatedMsg.roomId && updatedMsg.roomId !== activeRoomId) return;
+    const li = document.getElementById(`msg-${updatedMsg.id}`);
+    if (li) {
+        const isMe = updatedMsg.user === currentUser.name;
+        const isStacked = li.classList.contains('stacked');
+        li.innerHTML = getMessageInnerHTML(updatedMsg, isMe, isStacked);
     }
 });
 
 socket.on('messages read', () => {
     document.querySelectorAll('.ticks.delivered').forEach(el => {
-        el.classList.remove('delivered');
-        el.classList.add('read');
+        el.classList.remove('delivered'); el.classList.add('read');
     });
 });
 
@@ -433,6 +497,66 @@ socket.on('message edited', (data) => {
     const el = document.getElementById(`msg-${data.id}`);
     if (el) { const textNode = el.querySelector('.message-text'); textNode.innerHTML = escapeHTML(data.newText) + `<span class="edited-tag">(edited)</span>`; }
 });
+
+// 🌟 HTML Generator for Messages (Used for new messages AND updating live polls)
+function getMessageInnerHTML(data, isMe, isStacked) {
+    let contentText = escapeHTML(data.text);
+    if(data.isEdited) contentText += `<span class="edited-tag">(edited)</span>`;
+    
+    let content = '';
+    // 1. Check for Polls
+    if (data.poll) {
+        let totalVotes = data.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0);
+        let pollOptsHTML = data.poll.options.map((opt, idx) => {
+            let percent = totalVotes > 0 ? Math.round((opt.votes.length / totalVotes) * 100) : 0;
+            let hasVoted = opt.votes.includes(currentUser.name);
+            return `<button class="poll-option-btn" onclick="socket.emit('vote poll', {msgId: '${data.id}', optionIndex: ${idx}})">
+                <div class="poll-bar" style="width: ${percent}%;"></div>
+                <div class="poll-text-row"><span>${hasVoted ? '✅ ' : ''}${escapeHTML(opt.text)}</span><span>${percent}%</span></div>
+            </button>`;
+        }).join('');
+        content = `<div class="poll-card"><div class="poll-question">📊 ${escapeHTML(data.poll.question)}</div>${pollOptsHTML}</div>`;
+    } 
+    // 2. Check for Images/Videos
+    else if (data.uploadedImage) {
+        if (data.isVideo) content = `<video src="${data.uploadedImage}" class="chat-video" controls playsinline></video>`;
+        else content = `<img src="${data.uploadedImage}" class="chat-image">`;
+    } 
+    // 3. Regular Text
+    else {
+        content = `<span class="message-text">${contentText}</span>`;
+    }
+
+    // 🌟 LINK PREVIEWS!
+    if (data.linkPreview) {
+        content += `<a href="${escapeHTML(data.linkPreview.url)}" target="_blank" class="link-preview-card">
+            ${data.linkPreview.img ? `<img src="${escapeHTML(data.linkPreview.img)}" class="link-preview-img" style="display:block;">` : ''}
+            <div class="link-preview-content">
+                <div class="link-preview-title">${escapeHTML(data.linkPreview.title)}</div>
+                ${data.linkPreview.desc ? `<div class="link-preview-desc">${escapeHTML(data.linkPreview.desc)}</div>` : ''}
+            </div>
+        </a>`;
+    }
+    
+    let replyHTML = ''; 
+    if (data.replyTo) { replyHTML = `<div class="replied-to"><div class="replied-to-user">${escapeHTML(data.replyTo.user)}</div><div class="replied-to-text">${escapeHTML(data.replyTo.text).substring(0, 60)}</div></div>`; }
+    
+    let tickClass = data.status === 'read' ? 'read' : 'delivered';
+    let ticks = isMe ? `<span class="ticks ${tickClass}">✔✔</span>` : '';
+    let ghostIcon = data.isGhost ? '⏱️ ' : '';
+
+    return `
+        ${!isMe && !isStacked ? `<img src="${data.avatar}" class="avatar-small" data-name="${data.user}">` : ''}
+        ${!isStacked ? `<span class="sender-name" style="color:${isMe ? '#00a884' : '#ea005e'}">${isMe ? 'You' : data.user}</span>` : ''}
+        ${replyHTML}
+        ${content}
+        <div class="meta-row">
+            <span class="likes-badge" id="like-count-${data.id}">${data.likes > 0 ? '❤️ ' + data.likes : ''}</span>
+            <span>${ghostIcon}${data.time}</span>
+            ${ticks}
+        </div>
+    `;
+}
 
 function displayMessage(data, isHistory) {
     const li = document.createElement('li'); li.id = `msg-${data.id}`; li.dataset.sender = data.user;
@@ -446,38 +570,10 @@ function displayMessage(data, isHistory) {
     if(isStacked) li.classList.add('stacked');
     if(data.isGhost) li.classList.add('ghost-message');
 
-    let contentText = escapeHTML(data.text);
-    if(data.isEdited) contentText += `<span class="edited-tag">(edited)</span>`;
-    
-    let content = '';
-    if (data.uploadedImage) {
-        if (data.isVideo) {
-            content = `<video src="${data.uploadedImage}" class="chat-video" controls playsinline></video>`;
-        } else {
-            content = `<img src="${data.uploadedImage}" class="chat-image">`;
-        }
-    } else {
-        content = `<span class="message-text">${contentText}</span>`;
-    }
-    
-    let replyHTML = ''; 
-    if (data.replyTo) { replyHTML = `<div class="replied-to"><div class="replied-to-user">${escapeHTML(data.replyTo.user)}</div><div class="replied-to-text">${escapeHTML(data.replyTo.text).substring(0, 60)}</div></div>`; }
-    
-    let tickClass = data.status === 'read' ? 'read' : 'delivered';
-    let ticks = isMe ? `<span class="ticks ${tickClass}">✔✔</span>` : '';
-    let ghostIcon = data.isGhost ? '⏱️ ' : '';
+    // Apply the custom Bubble Color if one was provided
+    if (data.color) li.style.setProperty('--bubble-color', data.color);
 
-    li.innerHTML = `
-        ${!isMe && !isStacked ? `<img src="${data.avatar}" class="avatar-small" data-name="${data.user}">` : ''}
-        ${!isStacked ? `<span class="sender-name" style="color:${isMe ? '#00a884' : '#ea005e'}">${isMe ? 'You' : data.user}</span>` : ''}
-        ${replyHTML}
-        ${content}
-        <div class="meta-row">
-            <span class="likes-badge" id="like-count-${data.id}">${data.likes > 0 ? '❤️ ' + data.likes : ''}</span>
-            <span>${ghostIcon}${data.time}</span>
-            ${ticks}
-        </div>
-    `;
+    li.innerHTML = getMessageInnerHTML(data, isMe, isStacked);
     messages.appendChild(li); messages.scrollTop = messages.scrollHeight;
 
     if (data.isGhost && !isHistory) {
@@ -492,23 +588,6 @@ document.getElementById('messages').addEventListener('click', (e) => {
         if (friendName === '🤖 Bot') return;
         socket.emit('get user info', friendName);
     }
-});
-
-socket.on('user info result', (user) => {
-    document.getElementById('view-profile-avatar').src = user.avatar;
-    document.getElementById('view-profile-name').textContent = user.name;
-    document.getElementById('view-profile-about').textContent = user.about;
-    
-    const lastSeenEl = document.getElementById('view-profile-last-seen');
-    if (user.isOnline) {
-        lastSeenEl.innerHTML = '🟢 Online'; lastSeenEl.style.color = '#00a884';
-    } else {
-        const dateObj = new Date(user.lastSeen);
-        const timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const isToday = dateObj.toDateString() === new Date().toDateString();
-        lastSeenEl.innerHTML = `Last seen ${isToday ? 'Today' : dateObj.toLocaleDateString()} at ${timeString}`; lastSeenEl.style.color = '#8696a0'; 
-    }
-    viewProfileModal.classList.remove('hidden');
 });
 
 document.getElementById('theme-toggle').onclick = () => document.body.classList.toggle('dark-mode');
