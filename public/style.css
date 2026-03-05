@@ -303,3 +303,35 @@ body.dark-mode #reply-preview-container { background-color: rgba(32, 44, 51, 0.9
 /* 🌟 Video Player Bubble Styles */
 .chat-video { max-width: 100%; border-radius: 8px; margin-top: 5px; outline: none; background: black; }
 .my-message .chat-video { box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+/* =========================================
+   🌟 NEW: COLORS, POLLS, LINKS & SWIPES!
+   ========================================= */
+
+/* Custom Bubble Colors */
+.my-message { background-color: var(--bubble-color, #dcf8c6) !important; }
+.other-message { background-color: var(--bubble-color, #ffffff) !important; }
+body.dark-mode .my-message { background-color: var(--bubble-color, #005c4b) !important; }
+body.dark-mode .other-message { background-color: var(--bubble-color, #202c33) !important; }
+
+/* Smooth swipe animations */
+#messages li { transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+/* Interactive Poll Bubbles */
+.poll-card { margin-top: 8px; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px; background: rgba(255,255,255,0.4); width: 100%; min-width: 240px; }
+body.dark-mode .poll-card { background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.05); }
+.poll-question { font-weight: bold; margin-bottom: 10px; font-size: 16px; }
+.poll-option-btn { display: flex; flex-direction: column; width: 100%; background: rgba(0,0,0,0.06); border: none; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; cursor: pointer; position: relative; overflow: hidden; text-align: left; transition: transform 0.1s; }
+body.dark-mode .poll-option-btn { background: rgba(255,255,255,0.05); color: #e9edef; }
+.poll-option-btn:active { transform: scale(0.97); }
+.poll-bar { position: absolute; top: 0; left: 0; height: 100%; background: rgba(0, 168, 132, 0.3); width: 0%; transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 1; }
+.poll-text-row { display: flex; justify-content: space-between; z-index: 2; position: relative; width: 100%; font-size: 14.5px; font-weight: 500; }
+
+/* Link Previews */
+.link-preview-card { display: block; text-decoration: none; color: inherit; background: rgba(0,0,0,0.04); border-left: 4px solid #00a884; border-radius: 8px; margin-top: 8px; overflow: hidden; font-size: 13.5px; transition: opacity 0.2s; }
+body.dark-mode .link-preview-card { background: rgba(255,255,255,0.05); }
+.link-preview-card:active { opacity: 0.7; }
+.link-preview-img { width: 100%; height: 130px; object-fit: cover; display: none; }
+.link-preview-content { padding: 8px 10px; }
+.link-preview-title { font-weight: bold; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #00a884; }
+.link-preview-desc { color: #54656f; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12.5px; }
+body.dark-mode .link-preview-desc { color: #8696a0; }
