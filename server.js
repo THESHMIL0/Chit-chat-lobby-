@@ -6,7 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 1e8 }); // Allows up to 100MB videos!
+const io = new Server(server, { maxHttpBufferSize: 1e8 }); 
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -39,9 +39,7 @@ function broadcastRooms(targetSocket = io) {
     });
 }
 
-// 🌟 THE SUPER-BRAIN AI BOT (Now using Gemini 2.5 Flash!)
 async function askSmartBot(prompt) {
-    // 🛡️ SECURE: Grabbing the key from Render's vault! No hardcoded keys!
     const apiKey = process.env.GEMINI_API_KEY; 
 
     if (!apiKey) {
@@ -51,7 +49,6 @@ async function askSmartBot(prompt) {
     try {
         const finalPrompt = prompt + " (Keep your response conversational, under 3 sentences, and use emojis. Act like a helpful chat friend.)";
         
-        // 👇 FIX: Using the brand new gemini-2.5-flash model! 👇
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -115,13 +112,23 @@ io.on('connection', (socket) => {
                 socket.emit('pinned updated', room.pinnedMessage ? JSON.parse(room.pinnedMessage) : null);
                 
                 if (!data.isReconnect) {
-                    const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚀 ${data.user.name} joined the group` };
-                    db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [sysMsg.id, room.id, Date.now(), JSON.stringify(sysMsg)]);
+                    // 🌟 FIX: We send the Join announcement, but DO NOT save it permanently to the database to stop spam!
+                    const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚀 ${data.user.name} joined the chat`, roomId: room.id };
                     io.to(room.id).emit('chat message', sysMsg);
                 }
                 io.to(room.id).emit('room users', getUsersInRoom(room.id));
             });
         });
+    });
+
+    // 🌟 FIX: Officially leave the room when hitting the Back button
+    socket.on('leave room', () => {
+        const roomId = activeUsersById[socket.id]?.roomId;
+        if (roomId) {
+            socket.leave(roomId);
+            delete activeUsersById[socket.id].roomId;
+            io.to(roomId).emit('room users', getUsersInRoom(roomId));
+        }
     });
 
     socket.on('update profile', (user) => {
@@ -159,6 +166,7 @@ io.on('connection', (socket) => {
         if(!roomId) return; 
         data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
         data.type = 'chat'; data.likes = 0; data.status = 'delivered'; 
+        data.roomId = roomId; // 🌟 FIX: Inject exact Room ID so client knows where it belongs
         
         if (!data.isGhost) {
             db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [data.id, roomId, Date.now(), JSON.stringify(data)]);
@@ -181,6 +189,7 @@ io.on('connection', (socket) => {
 
                 const botMsg = {
                     id: Date.now().toString() + 'bot', user: '🤖 Bot',
+                    roomId: roomId, // 🌟 FIX: Inject Room ID to Bot messages too
                     avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=ChitChatBot&backgroundColor=00a884',
                     text: botReply, type: 'chat', likes: 0, status: 'delivered',
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -195,7 +204,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 🌟 BLUE TICK LISTENER
     socket.on('mark read', () => {
         const roomId = activeUsersById[socket.id]?.roomId;
         const username = activeUsersById[socket.id]?.name;
