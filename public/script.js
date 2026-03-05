@@ -43,7 +43,7 @@ let isGhostMode = false;
 let unreadCounts = {}; 
 let globalRoomList = [];
 
-// 🌟 NEW: Typing State Trackers
+// Trackers for the beautiful typing indicators
 let typingTimeout;
 let currentlyTyping = new Set();
 let baseOnlineText = "Tap to change info";
@@ -88,6 +88,8 @@ function renderRoomList() {
         const li = document.createElement('li');
         li.className = 'room-item';
         const logoUrl = room.logo || `https://api.dicebear.com/7.x/shapes/svg?seed=${room.id}`;
+        
+        // Show unread badge if someone messaged while you were away!
         const unreadCount = unreadCounts[room.id] || 0;
         const badgeHTML = unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : '';
 
@@ -146,7 +148,7 @@ socket.on('chat history', (data) => {
     data.history.forEach(msg => displayMessage(msg, true));
 });
 
-// 🌟 NEW: Manage header subtitle depending on who is typing
+// Update the header with the pulsing typing indicator or the regular online list
 function updateHeaderSubtitle() {
     if (currentlyTyping.size > 0) {
         const typers = Array.from(currentlyTyping).join(', ');
@@ -168,7 +170,6 @@ socket.on('room users', (usersList) => {
     updateHeaderSubtitle();
 });
 
-// 🌟 NEW: Receive typing broadcasts from server
 socket.on('user typing', (data) => {
     if (data.isTyping) currentlyTyping.add(data.name);
     else currentlyTyping.delete(data.name);
@@ -183,7 +184,7 @@ viewProfileModal.addEventListener('click', (e) => { if(e.target === viewProfileM
 document.getElementById('back-btn').onclick = (e) => { 
     e.stopPropagation(); chatScreen.classList.add('hidden'); roomListScreen.classList.remove('hidden'); 
     activeRoomId = null; isGhostMode = false; ghostBtn.classList.remove('active'); 
-    currentlyTyping.clear(); // Clear typing memory when leaving
+    currentlyTyping.clear(); 
 };
 
 function updateGroupHeader(room) {
@@ -199,19 +200,19 @@ groupPicUpload.addEventListener('change', function() {
 
 ghostBtn.onclick = () => { isGhostMode = !isGhostMode; ghostBtn.classList.toggle('active', isGhostMode); };
 
-// 🌟 NEW: Track when YOU are typing and tell the server
 input.addEventListener('input', () => { 
     if(editingMsgId) sendMicBtn.innerHTML = '✔'; else sendMicBtn.innerHTML = input.value.trim() ? '➤' : '🎤'; 
     
+    // Broadcast your typing to the room!
     socket.emit('typing', true);
     clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => socket.emit('typing', false), 1500); // Stop after 1.5s of no typing
+    typingTimeout = setTimeout(() => socket.emit('typing', false), 1500); 
 });
 
 function sendMessage() {
     const text = input.value.trim();
     if (text) {
-        socket.emit('typing', false); // Instantly stop typing indicator when sending
+        socket.emit('typing', false); 
         if (editingMsgId) { socket.emit('edit message', { msgId: editingMsgId, newText: text }); editingMsgId = null;
         } else { socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), replyTo: replyingTo, isGhost: isGhostMode }); }
         input.value = ''; sendMicBtn.innerHTML = '🎤'; replyingTo = null; replyPreviewContainer.classList.add('hidden');
