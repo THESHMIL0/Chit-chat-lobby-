@@ -15,7 +15,7 @@ const db = new sqlite3.Database('./chat.db');
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS rooms (id TEXT PRIMARY KEY, name TEXT, logo TEXT, isPrivate INTEGER, password TEXT, pinnedMessage TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, roomId TEXT, timestamp INTEGER, data TEXT)`);
-    db.run(`CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY, avatar TEXT, about TEXT, isOnline INTEGER, lastSeen INTEGER)`);
+    db.run(`CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY, avatar TEXT, about TEXT, isOnline INTEGER, lastSeen INTEGER, bubbleColor TEXT)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_history_roomId_time ON history(roomId, timestamp)`);
     
     db.get(`SELECT id FROM rooms WHERE id = 'lobby'`, (err, row) => {
@@ -39,16 +39,31 @@ function broadcastRooms(targetSocket = io) {
     });
 }
 
+// 🌟 NEW: Link Scraper Engine (Grabs titles and images from URLs)
+async function fetchLinkPreview(url) {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500); 
+        const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'WhatsAppBot/1.0' } });
+        clearTimeout(timeoutId);
+        const text = await res.text();
+        
+        const titleMatch = text.match(/<title[^>]*>([^<]+)<\/title>/i);
+        const descMatch = text.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i) || text.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+        const imgMatch = text.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+
+        if (titleMatch) return { title: titleMatch[1].trim(), desc: descMatch ? descMatch[1].trim() : '', img: imgMatch ? imgMatch[1].trim() : '', url: url };
+    } catch (e) { /* Ignore fetch errors */ }
+    return null;
+}
+
+// 🤖 The Super-Brain AI Bot
 async function askSmartBot(prompt) {
     const apiKey = process.env.GEMINI_API_KEY; 
-
-    if (!apiKey) {
-        return "My boss forgot to put my API key in Render's Environment Variables! 😿";
-    }
+    if (!apiKey) return "My boss forgot to put my API key in Render's Environment Variables! 😿";
 
     try {
         const finalPrompt = prompt + " (Keep your response conversational, under 3 sentences, and use emojis. Act like a helpful chat friend.)";
-        
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -63,17 +78,9 @@ async function askSmartBot(prompt) {
             })
         });
         const data = await res.json();
-        
-        if (data.error) {
-            console.error("🤖 BOT ERROR:", data.error.message);
-            return "My AI brain is having a connection issue... check Render logs! 🔌";
-        }
-
+        if (data.error) return "My AI brain is having a connection issue... check Render logs! 🔌";
         return data.candidates[0].content.parts[0].text;
-    } catch (e) {
-        console.error("🤖 FETCH ERROR:", e);
-        return "My brain is a little fuzzy right now... try asking again! 😵‍💫";
-    }
+    } catch (e) { return "My brain is a little fuzzy right now... try asking again! 😵‍💫"; }
 }
 
 io.on('connection', (socket) => {
@@ -101,8 +108,8 @@ io.on('connection', (socket) => {
             socket.join(room.id);
             activeUsersById[socket.id] = { ...data.user, roomId: room.id };
 
-            db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen) VALUES (?, ?, ?, ?, ?)", 
-                [data.user.name, data.user.avatar, data.user.about, 1, Date.now()]);
+            db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen, bubbleColor) VALUES (?, ?, ?, ?, ?, ?)", 
+                [data.user.name, data.user.avatar, data.user.about, 1, Date.now(), data.user.color || '#dcf8c6']);
 
             db.all("SELECT data FROM history WHERE roomId = ? ORDER BY timestamp ASC LIMIT 50", [room.id], (err, rows) => {
                 const history = rows ? rows.map(row => JSON.parse(row.data)) : [];
@@ -112,7 +119,6 @@ io.on('connection', (socket) => {
                 socket.emit('pinned updated', room.pinnedMessage ? JSON.parse(room.pinnedMessage) : null);
                 
                 if (!data.isReconnect) {
-                    // 🌟 FIX: We send the Join announcement, but DO NOT save it permanently to the database to stop spam!
                     const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚀 ${data.user.name} joined the chat`, roomId: room.id };
                     io.to(room.id).emit('chat message', sysMsg);
                 }
@@ -121,7 +127,6 @@ io.on('connection', (socket) => {
         });
     });
 
-    // 🌟 FIX: Officially leave the room when hitting the Back button
     socket.on('leave room', () => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if (roomId) {
@@ -137,7 +142,8 @@ io.on('connection', (socket) => {
             activeUsersById[socket.id].avatar = user.avatar;
             activeUsersById[socket.id].about = user.about;
         }
-        db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen) VALUES (?, ?, ?, ?, ?)", [user.name, user.avatar, user.about, 1, Date.now()]);
+        db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen, bubbleColor) VALUES (?, ?, ?, ?, ?, ?)", 
+            [user.name, user.avatar, user.about, 1, Date.now(), user.color || '#dcf8c6']);
     });
 
     socket.on('get user info', (username) => {
@@ -161,12 +167,22 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('chat message', (data) => {
+    socket.on('chat message', async (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return; 
         data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
         data.type = 'chat'; data.likes = 0; data.status = 'delivered'; 
-        data.roomId = roomId; // 🌟 FIX: Inject exact Room ID so client knows where it belongs
+        data.roomId = roomId;
+        
+        // 🌟 NEW: Link Scraper Trigger
+        if (data.text) {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            const urls = data.text.match(urlRegex);
+            if (urls && urls.length > 0) {
+                const preview = await fetchLinkPreview(urls[0]);
+                if (preview) data.linkPreview = preview;
+            }
+        }
         
         if (!data.isGhost) {
             db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [data.id, roomId, Date.now(), JSON.stringify(data)]);
@@ -188,12 +204,10 @@ io.on('connection', (socket) => {
                 let botReply = await askSmartBot(prompt);
 
                 const botMsg = {
-                    id: Date.now().toString() + 'bot', user: '🤖 Bot',
-                    roomId: roomId, // 🌟 FIX: Inject Room ID to Bot messages too
+                    id: Date.now().toString() + 'bot', user: '🤖 Bot', roomId: roomId,
                     avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=ChitChatBot&backgroundColor=00a884',
-                    text: botReply, type: 'chat', likes: 0, status: 'delivered',
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    isGhost: false
+                    text: botReply, type: 'chat', likes: 0, status: 'delivered', color: '#00a884',
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: false
                 };
 
                 io.to(roomId).emit('user typing', { name: '🤖 Bot', isTyping: false });
@@ -202,6 +216,31 @@ io.on('connection', (socket) => {
                 socket.broadcast.emit('global room alert', roomId);
             }, 1500);
         }
+    });
+
+    // 🌟 NEW: Poll Engine
+    socket.on('vote poll', (data) => {
+        const roomId = activeUsersById[socket.id]?.roomId;
+        const voterName = activeUsersById[socket.id]?.name;
+        if(!roomId || !voterName) return;
+
+        db.get("SELECT data FROM history WHERE id = ?", [data.msgId], (err, row) => {
+            if (row) {
+                const msg = JSON.parse(row.data);
+                if (msg.poll) {
+                    // Remove old vote
+                    msg.poll.options.forEach(opt => {
+                        const index = opt.votes.indexOf(voterName);
+                        if (index > -1) opt.votes.splice(index, 1);
+                    });
+                    // Add new vote
+                    msg.poll.options[data.optionIndex].votes.push(voterName);
+                    
+                    db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), data.msgId]);
+                    io.to(roomId).emit('poll updated', msg);
+                }
+            }
+        });
     });
 
     socket.on('mark read', () => {
