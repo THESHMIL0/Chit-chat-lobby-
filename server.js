@@ -39,19 +39,40 @@ function broadcastRooms(targetSocket = io) {
     });
 }
 
+// 🌟 THE SUPER-BRAIN AI BOT
 async function askSmartBot(prompt) {
-    const apiKey = 'AIzaSyCdKWPml3o8oCMH49_d_ePvuFCENFQsLDk'; 
+    // 🛡️ SECURE: Grabbing the key from Render's vault! No hardcoded keys!
+    const apiKey = process.env.GEMINI_API_KEY; 
+
+    if (!apiKey) {
+        return "My boss forgot to put my API key in Render's Environment Variables! 😿";
+    }
 
     try {
         const finalPrompt = prompt + " (Keep your response conversational, under 3 sentences, and use emojis. Act like a helpful chat friend.)";
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: finalPrompt }] }] })
+            body: JSON.stringify({ 
+                contents: [{ parts: [{ text: finalPrompt }] }],
+                safetySettings: [
+                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+                ]
+            })
         });
         const data = await res.json();
+        
+        if (data.error) {
+            console.error("🤖 BOT ERROR:", data.error.message);
+            return "My AI brain is having a connection issue... check Render logs! 🔌";
+        }
+
         return data.candidates[0].content.parts[0].text;
     } catch (e) {
+        console.error("🤖 FETCH ERROR:", e);
         return "My brain is a little fuzzy right now... try asking again! 😵‍💫";
     }
 }
@@ -135,7 +156,7 @@ io.on('connection', (socket) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return; 
         data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
-        data.type = 'chat'; data.likes = 0; data.status = 'delivered'; // 🌟 Tracking delivery!
+        data.type = 'chat'; data.likes = 0; data.status = 'delivered'; 
         
         if (!data.isGhost) {
             db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [data.id, roomId, Date.now(), JSON.stringify(data)]);
@@ -172,7 +193,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 🌟 NEW: THE BLUE TICK LISTENER
+    // 🌟 BLUE TICK LISTENER
     socket.on('mark read', () => {
         const roomId = activeUsersById[socket.id]?.roomId;
         const username = activeUsersById[socket.id]?.name;
@@ -181,7 +202,6 @@ io.on('connection', (socket) => {
                 if (rows) {
                     rows.forEach(row => {
                         const msg = JSON.parse(row.data);
-                        // If it's someone else's message and we haven't read it yet...
                         if (msg.user !== username && msg.status !== 'read') {
                             msg.status = 'read';
                             db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), row.id]);
@@ -189,7 +209,6 @@ io.on('connection', (socket) => {
                     });
                 }
             });
-            // Tell everyone in the room to turn their grey ticks Blue!
             socket.to(roomId).emit('messages read'); 
         }
     });
