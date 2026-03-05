@@ -1,31 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chit Chat Lobby</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#008069">
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
+</head>
+<body>
+    <div id="lightbox" class="hidden">
+        <div id="lightbox-close-area"><span id="lightbox-close">✖</span></div>
+        <img id="lightbox-img" src="">
+    </div>
+
+    <div id="login-screen" class="screen">
+        <div class="login-card">
+            <h2>Welcome 😸</h2>
+            <div id="avatar-preview-container" onclick="document.getElementById('profile-pic-upload').click()">
+                <img id="avatar-preview" src="https://api.dicebear.com/7.x/bottts/svg?seed=guest" alt="Avatar">
+                <div class="edit-icon">📷</div>
+            </div>
+            <input type="file" id="profile-pic-upload" accept="image/*" class="hidden" />
+            <input type="text" id="username-input" class="premium-input" placeholder="Enter your name..." autocomplete="nope" required />
+            <button id="login-btn">Continue</button>
+        </div>
+    </div>
+
+    <div id="room-list-screen" class="screen hidden">
+        <div class="app-header">
+            <span>Chats</span>
+            <div>
+                <button id="theme-toggle" class="icon-btn">🌙</button>
+                <button id="settings-btn" class="icon-btn" style="margin-left: 10px;">⋮</button>
+            </div>
+        </div>
+        <ul id="rooms-ul"></ul>
+        <button id="show-create-room-btn" class="fab-btn">💬</button>
+    </div>
+
     <div id="profile-screen" class="screen hidden">
         <div class="app-header">
             <button id="close-profile-btn" class="icon-btn" style="margin-right:10px;">⬅</button>
             <span>Profile</span>
         </div>
-        
         <div class="profile-scroll-container">
             <div class="profile-header-bg"></div>
-            
             <div id="settings-avatar-container" onclick="document.getElementById('profile-pic-upload').click()">
                 <img id="settings-avatar-preview" src="" alt="Avatar">
                 <div class="edit-icon">📷</div>
             </div>
-            
             <div class="profile-card">
                 <div class="profile-input-group">
                     <label>👤 Name</label>
                     <input type="text" id="settings-username" autocomplete="nope" />
                 </div>
-                
                 <div class="profile-divider"></div>
-                
                 <div class="profile-input-group">
                     <label>ℹ️ About</label>
                     <input type="text" id="settings-about" autocomplete="nope" placeholder="Hey there! I am using Chit Chat." />
                 </div>
             </div>
-            
             <button id="save-profile-btn">Save Profile</button>
         </div>
     </div>
+
+    <div id="chat-screen" class="screen hidden">
+        <div class="app-header" id="chat-header" onclick="document.getElementById('group-pic-upload').click()">
+            <button id="back-btn" class="icon-btn" style="margin-right:10px;">⬅</button>
+            <img id="current-room-logo" src="" class="header-avatar">
+            <div class="header-text-container">
+                <span id="current-room-name"></span>
+                <span class="header-subtitle" id="online-users-text">Tap to change info</span>
+            </div>
+        </div>
+        <input type="file" id="group-pic-upload" accept="image/*" class="hidden" />
+        
+        <div id="pinned-banner" class="hidden">
+            <div>📌 <b id="pinned-user"></b>: <span id="pinned-text"></span></div>
+            <button id="unpin-btn">✖</button>
+        </div>
+
+        <ul id="messages"></ul>
+
+        <div id="reply-preview-container" class="hidden">
+            <div id="reply-preview-text"></div>
+            <button type="button" id="cancel-reply-btn">✖</button>
+        </div>
+
+        <div id="chat-footer-controls">
+            <div class="input-pill">
+                <button id="emoji-btn" class="icon-btn">😀</button>
+                <input id="the-chat-box" type="text" autocomplete="nope" spellcheck="false" placeholder="Message" />
+                <button id="attach-btn" class="icon-btn">📎</button>
+                <input type="file" id="image-upload" accept="image/*" class="hidden" />
+                <button id="ghost-btn" class="icon-btn" style="font-size: 20px;">👻</button>
+            </div>
+            <button id="send-mic-btn" class="circle-btn">🎤</button>
+        </div>
+    </div>
+
+    <div id="view-profile-modal" class="modal hidden">
+        <div class="modal-content" style="align-items: center; text-align: center;">
+            <div class="modal-drag-pill"></div>
+            <img id="view-profile-avatar" src="" style="width:120px; height:120px; border-radius:50%; margin-bottom:10px; object-fit:cover; border: 3px solid #00a884;">
+            <h2 id="view-profile-name" style="color: #111b21; margin-bottom: 5px;"></h2>
+            <p id="view-profile-about" style="color: #667781; font-size: 15px; margin-bottom: 8px;"></p>
+            <p id="view-profile-last-seen"></p>
+            <button class="primary-btn" onclick="document.getElementById('view-profile-modal').classList.add('hidden')">Close</button>
+        </div>
+    </div>
+
+    <div id="message-options-modal" class="modal hidden">
+        <div class="modal-content menu-list">
+            <div class="modal-drag-pill"></div>
+            <button id="opt-reply" class="menu-btn"><span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;">↩️</span> Reply</button>
+            <button id="opt-like" class="menu-btn"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">❤️</span> Like</button>
+            <button id="opt-pin" class="menu-btn"><span class="menu-icon" style="background: rgba(255, 179, 0, 0.15); color: #ffb300;">📌</span> Pin</button>
+            <button id="opt-edit" class="menu-btn hidden"><span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: #00a884;">✏️</span> Edit</button>
+            <button id="opt-delete" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Delete</button>
+        </div>
+    </div>
+
+    <div id="create-room-modal" class="modal hidden">
+        <div class="modal-content form-modal">
+            <div class="modal-drag-pill"></div>
+            <h3>New Room</h3>
+            <div style="margin-top: 15px; margin-bottom: 10px;">
+                <input type="text" id="new-room-name" class="premium-input" placeholder="Room Name" autocomplete="nope">
+            </div>
+            <label class="premium-toggle">
+                <span>Private (Needs Password)</span>
+                <div class="switch"><input type="checkbox" id="new-room-private"><span class="slider"></span></div>
+            </label>
+            <div class="hidden" id="password-input-container" style="margin-bottom: 10px;">
+                <input type="text" id="new-room-pass" class="premium-input" placeholder="Password" autocomplete="nope">
+            </div>
+            <button id="create-room-submit" class="primary-btn" style="margin-top: 15px;">Create</button>
+        </div>
+    </div>
+
+    <div id="password-modal" class="modal hidden">
+        <div class="modal-content form-modal">
+            <div class="modal-drag-pill"></div>
+            <h3>Private Room</h3>
+            <p class="modal-subtitle" style="margin-bottom: 15px;">This room requires a password</p>
+            <input type="text" id="join-room-pass" class="premium-input" placeholder="Enter Password" autocomplete="nope" style="margin-bottom: 15px;">
+            <button id="join-room-submit" class="primary-btn">Join Room</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
