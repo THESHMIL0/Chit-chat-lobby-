@@ -96,15 +96,37 @@ document.getElementById('login-btn').addEventListener('click', () => {
     if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
 });
 
-document.getElementById('settings-btn').onclick = () => { roomListScreen.classList.add('hidden'); profileScreen.classList.remove('hidden'); };
-document.getElementById('close-profile-btn').onclick = () => { profileScreen.classList.add('hidden'); roomListScreen.classList.remove('hidden'); };
+// 🌟 FIX: ANDROID BACK BUTTON SUPPORT (HISTORY API)
+document.getElementById('settings-btn').onclick = () => { 
+    history.pushState({screen: 'profile'}, '', '#profile');
+    roomListScreen.classList.add('hidden'); 
+    profileScreen.classList.remove('hidden'); 
+};
+
+document.getElementById('close-profile-btn').onclick = () => { history.back(); };
+document.getElementById('back-btn').onclick = (e) => { e.stopPropagation(); history.back(); };
+
+window.addEventListener('popstate', (e) => {
+    if (activeRoomId) {
+        chatScreen.classList.add('hidden');
+        roomListScreen.classList.remove('hidden');
+        socket.emit('leave room');
+        activeRoomId = null;
+        isGhostMode = false;
+        ghostBtn.classList.remove('active');
+        currentlyTyping.clear();
+    } else if (!profileScreen.classList.contains('hidden')) {
+        profileScreen.classList.add('hidden');
+        roomListScreen.classList.remove('hidden');
+    }
+});
 
 document.getElementById('save-profile-btn').onclick = () => {
     if(settingsUsername.value.trim()) currentUser.name = settingsUsername.value.trim();
     if(settingsAbout.value.trim()) currentUser.about = settingsAbout.value.trim();
     currentUser.color = settingsBubbleColor.value; 
     socket.emit('update profile', currentUser);
-    profileScreen.classList.add('hidden'); roomListScreen.classList.remove('hidden');
+    history.back(); // Use native back to close profile safely!
 };
 
 function renderRoomList() {
@@ -158,8 +180,10 @@ document.getElementById('join-room-submit').onclick = () => {
 function joinRoom(roomId, password, isReconnect) { socket.emit('join room', { roomId, password, user: currentUser, isReconnect }); }
 socket.on('connect', () => { if (currentUser.name && activeRoomId) joinRoom(activeRoomId, currentRoomPassword, true); });
 socket.on('join error', (msg) => alert(msg));
-
 socket.on('chat history', (data) => {
+    // 🌟 FIX: ANDROID BACK BUTTON SUPPORT (HISTORY API)
+    history.pushState({screen: 'chat', roomId: data.room.id}, '', '#chat');
+    
     roomListScreen.classList.add('hidden'); chatScreen.classList.remove('hidden');
     activeRoomId = data.room.id; unreadCounts[activeRoomId] = 0; renderRoomList();
     updateGroupHeader(data.room);
@@ -201,21 +225,11 @@ socket.on('user typing', (data) => {
     if (data.isTyping) currentlyTyping.add(data.name); else currentlyTyping.delete(data.name);
     updateHeaderSubtitle();
 });
+
 // Modals closing logic
 [createRoomModal, passwordModal, msgOptionsModal, viewProfileModal, groupInfoModal, createPollModal].forEach(modal => {
     modal.addEventListener('click', (e) => { if(e.target === modal) modal.classList.add('hidden'); });
 });
-
-document.getElementById('back-btn').onclick = (e) => { 
-    e.stopPropagation(); 
-    chatScreen.classList.add('hidden'); 
-    roomListScreen.classList.remove('hidden'); 
-    socket.emit('leave room'); 
-    activeRoomId = null; 
-    isGhostMode = false; 
-    ghostBtn.classList.remove('active'); 
-    currentlyTyping.clear(); 
-};
 
 function updateGroupHeader(room) {
     currentRoomName.textContent = room.name; 
@@ -500,7 +514,7 @@ function getMessageInnerHTML(data, isMe, isStacked) {
     if(data.isEdited) contentText += `<span class="edited-tag">(edited)</span>`;
     
     let content = '';
-    // 1. Check for Polls (FIXED: Using Data Attributes safely)
+    // 1. Check for Polls
     if (data.poll) {
         let totalVotes = data.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0);
         let pollOptsHTML = data.poll.options.map((opt, idx) => {
@@ -599,7 +613,11 @@ let audioChunks = [];
 let isRecording = false;
 
 async function startRecording(e) {
+    // If there is text in the box, act as a Send button instead!
     if (input.value.trim()) { sendMessage(); return; } 
+    
+    // 🌟 Safely stop the phone from opening the "Copy" menu!
+    if (e.cancelable) e.preventDefault(); 
     
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -617,12 +635,16 @@ async function startRecording(e) {
             };
             reader.readAsDataURL(audioBlob);
             audioChunks = [];
-            stream.getTracks().forEach(track => track.stop()); 
+            stream.getTracks().forEach(track => track.stop()); // Turn off the mic
         };
         
         mediaRecorder.start();
         isRecording = true;
+        
+        // 🌟 AMAZING VISUAL FEEDBACK
         sendMicBtn.classList.add('recording-pulse');
+        input.placeholder = "🔴 Recording... (Release to send)";
+        input.disabled = true; // Locks the keyboard from popping up
         
     } catch(err) {
         alert("Please allow Microphone access to send Voice Notes! 🎤");
@@ -633,11 +655,22 @@ function stopRecording() {
     if (isRecording && mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
         isRecording = false;
+        
+        // 🌟 REVERT VISUAL FEEDBACK
         sendMicBtn.classList.remove('recording-pulse');
+        input.placeholder = "Message";
+        input.disabled = false;
     }
 }
 
+// Mouse events (Desktop)
 sendMicBtn.addEventListener('mousedown', startRecording);
-sendMicBtn.addEventListener('touchstart', startRecording, { passive: true });
 window.addEventListener('mouseup', stopRecording);
-window.addEventListener('touchend', stopRecording);
+
+// Touch events (Mobile - Completely bulletproofed!)
+sendMicBtn.addEventListener('touchstart', startRecording, { passive: false });
+sendMicBtn.addEventListener('touchend', stopRecording);
+sendMicBtn.addEventListener('touchcancel', stopRecording); // If your thumb slides off
+
+// Hardcore block for the mobile long-press menu
+sendMicBtn.addEventListener('contextmenu', e => e.preventDefault());
