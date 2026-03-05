@@ -10,15 +10,24 @@ const io = new Server(server, { maxHttpBufferSize: 1e8 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 🌟 FIX: Bulletproof Database with Indexes
 const db = new sqlite3.Database('./chat.db');
 
-let rooms = {
-    'lobby': { id: 'lobby', name: 'Lobby 😸', logo: '', isPrivate: false, password: '', pinnedMessage: null }
-};
-
 db.serialize(() => {
+    // 1. Create Tables
+    db.run(`CREATE TABLE IF NOT EXISTS rooms (id TEXT PRIMARY KEY, name TEXT, logo TEXT, isPrivate INTEGER, password TEXT, pinnedMessage TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, roomId TEXT, timestamp INTEGER, data TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY, avatar TEXT, about TEXT, isOnline INTEGER, lastSeen INTEGER)`);
+    
+    // 2. Add Indexes for insanely fast loading even with 1,000,000 messages
+    db.run(`CREATE INDEX IF NOT EXISTS idx_history_roomId_time ON history(roomId, timestamp)`);
+    
+    // 3. Ensure the main Lobby always exists
+    db.get(`SELECT id FROM rooms WHERE id = 'lobby'`, (err, row) => {
+        if (!row) {
+            db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES ('lobby', 'Lobby 😸', '', 0, '')`);
+        }
+    });
 });
 
 const activeUsersById = {}; 
@@ -27,41 +36,72 @@ function getUsersInRoom(roomId) {
     return Object.values(activeUsersById).filter(u => u.roomId === roomId).map(u => u.name);
 }
 
+// Helper to send the room list to everyone
+function broadcastRooms(targetSocket = io) {
+    db.all(`SELECT id, name, logo, isPrivate FROM rooms`, (err, rows) => {
+        if (rows) targetSocket.emit('room list', rows);
+    });
+}
+
 io.on('connection', (socket) => {
     
-    socket.emit('room list', Object.values(rooms).map(r => ({ id: r.id, name: r.name, logo: r.logo, isPrivate: r.isPrivate })));
+    // Send rooms on connect
+    broadcastRooms(socket);
 
     socket.on('create room', (data) => {
         const roomId = 'room_' + Date.now();
-        rooms[roomId] = { id: roomId, name: data.name, logo: '', isPrivate: data.isPrivate, password: data.password, pinnedMessage: null };
-        io.emit('room list', Object.values(rooms).map(r => ({ id: r.id, name: r.name, logo: r.logo, isPrivate: r.isPrivate })));
+        const isPrivateInt = data.isPrivate ? 1 : 0;
+        
+        // 🌟 FIX: Save new rooms securely to the database
+        db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES (?, ?, ?, ?, ?)`, 
+            [roomId, data.name, '', isPrivateInt, data.password], 
+            (err) => {
+                if (!err) broadcastRooms();
+            }
+        );
     });
 
     socket.on('join room', (data) => {
-        const room = rooms[data.roomId];
-        if (!room) return socket.emit('error', 'Room not found');
-        if (room.isPrivate && room.password !== data.password) return socket.emit('join error', 'Incorrect Password');
-
-        const oldRoomId = activeUsersById[socket.id]?.roomId;
-        Array.from(socket.rooms).forEach(r => { if(r !== socket.id) socket.leave(r); });
-        if (oldRoomId) io.to(oldRoomId).emit('room users', getUsersInRoom(oldRoomId)); 
-
-        socket.join(room.id);
-        activeUsersById[socket.id] = { ...data.user, roomId: room.id };
-
-        db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen) VALUES (?, ?, ?, ?, ?)", 
-            [data.user.name, data.user.avatar, data.user.about, 1, Date.now()]);
-
-        db.all("SELECT data FROM history WHERE roomId = ? ORDER BY timestamp ASC LIMIT 50", [room.id], (err, rows) => {
-            const history = rows ? rows.map(row => JSON.parse(row.data)) : [];
-            socket.emit('chat history', { room: room, history: history });
+        // 🌟 FIX: Pull room directly from database so reboots don't break it
+        db.get(`SELECT * FROM rooms WHERE id = ?`, [data.roomId], (err, room) => {
+            if (!room) return socket.emit('error', 'Room not found');
             
-            if (!data.isReconnect) {
-                const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚀 ${data.user.name} joined the group` };
-                db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [sysMsg.id, room.id, Date.now(), JSON.stringify(sysMsg)]);
-                io.to(room.id).emit('chat message', sysMsg);
+            // Check password if private
+            if (room.isPrivate === 1 && room.password !== data.password) {
+                return socket.emit('join error', 'Incorrect Password');
             }
-            io.to(room.id).emit('room users', getUsersInRoom(room.id));
+
+            const oldRoomId = activeUsersById[socket.id]?.roomId;
+            Array.from(socket.rooms).forEach(r => { if(r !== socket.id) socket.leave(r); });
+            if (oldRoomId) io.to(oldRoomId).emit('room users', getUsersInRoom(oldRoomId)); 
+
+            socket.join(room.id);
+            activeUsersById[socket.id] = { ...data.user, roomId: room.id };
+
+            db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen) VALUES (?, ?, ?, ?, ?)", 
+                [data.user.name, data.user.avatar, data.user.about, 1, Date.now()]);
+
+            db.all("SELECT data FROM history WHERE roomId = ? ORDER BY timestamp ASC LIMIT 50", [room.id], (err, rows) => {
+                const history = rows ? rows.map(row => JSON.parse(row.data)) : [];
+                
+                // Format room object for the client
+                const clientRoom = { id: room.id, name: room.name, logo: room.logo, isPrivate: room.isPrivate === 1 };
+                socket.emit('chat history', { room: clientRoom, history: history });
+                
+                // Send pinned message if exists
+                if (room.pinnedMessage) {
+                    socket.emit('pinned updated', JSON.parse(room.pinnedMessage));
+                } else {
+                    socket.emit('pinned updated', null);
+                }
+                
+                if (!data.isReconnect) {
+                    const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚀 ${data.user.name} joined the group` };
+                    db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [sysMsg.id, room.id, Date.now(), JSON.stringify(sysMsg)]);
+                    io.to(room.id).emit('chat message', sysMsg);
+                }
+                io.to(room.id).emit('room users', getUsersInRoom(room.id));
+            });
         });
     });
 
@@ -82,11 +122,24 @@ io.on('connection', (socket) => {
     });
 
     socket.on('update group info', (data) => {
-        if(rooms[data.roomId]) {
-            if (data.name) rooms[data.roomId].name = data.name;
-            if (data.logo) rooms[data.roomId].logo = data.logo;
-            io.emit('room list', Object.values(rooms).map(r => ({ id: r.id, name: r.name, logo: r.logo, isPrivate: r.isPrivate })));
-            io.to(data.roomId).emit('group info updated', rooms[data.roomId]);
+        // Update room in DB
+        const updates = [];
+        const params = [];
+        if (data.name) { updates.push("name = ?"); params.push(data.name); }
+        if (data.logo) { updates.push("logo = ?"); params.push(data.logo); }
+        
+        if (updates.length > 0) {
+            params.push(data.roomId);
+            db.run(`UPDATE rooms SET ${updates.join(', ')} WHERE id = ?`, params, (err) => {
+                if (!err) {
+                    broadcastRooms(); // Update list for everyone
+                    db.get(`SELECT * FROM rooms WHERE id = ?`, [data.roomId], (err, room) => {
+                        if (room) {
+                            io.to(data.roomId).emit('group info updated', { id: room.id, name: room.name, logo: room.logo });
+                        }
+                    });
+                }
+            });
         }
     });
 
@@ -122,9 +175,7 @@ io.on('connection', (socket) => {
 
     socket.on('typing', (isTyping) => {
         const roomId = activeUsersById[socket.id]?.roomId;
-        if(roomId) {
-            socket.to(roomId).emit('user typing', { name: activeUsersById[socket.id].name, isTyping });
-        }
+        if(roomId) socket.to(roomId).emit('user typing', { name: activeUsersById[socket.id].name, isTyping });
     });
 
     socket.on('like message', (msgId) => {
@@ -150,15 +201,18 @@ io.on('connection', (socket) => {
     socket.on('pin message', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return;
-        rooms[roomId].pinnedMessage = data.msg;
-        io.to(roomId).emit('pinned updated', data.msg);
+        const pinString = JSON.stringify(data.msg);
+        db.run(`UPDATE rooms SET pinnedMessage = ? WHERE id = ?`, [pinString, roomId], () => {
+            io.to(roomId).emit('pinned updated', data.msg);
+        });
     });
 
     socket.on('unpin message', () => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return;
-        rooms[roomId].pinnedMessage = null;
-        io.to(roomId).emit('pinned updated', null);
+        db.run(`UPDATE rooms SET pinnedMessage = NULL WHERE id = ?`, [roomId], () => {
+            io.to(roomId).emit('pinned updated', null);
+        });
     });
 
     socket.on('mark read', () => {
