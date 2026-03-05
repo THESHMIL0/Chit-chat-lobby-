@@ -10,23 +10,16 @@ const io = new Server(server, { maxHttpBufferSize: 1e8 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 🌟 FIX: Bulletproof Database with Indexes
 const db = new sqlite3.Database('./chat.db');
 
 db.serialize(() => {
-    // 1. Create Tables
     db.run(`CREATE TABLE IF NOT EXISTS rooms (id TEXT PRIMARY KEY, name TEXT, logo TEXT, isPrivate INTEGER, password TEXT, pinnedMessage TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, roomId TEXT, timestamp INTEGER, data TEXT)`);
     db.run(`CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY, avatar TEXT, about TEXT, isOnline INTEGER, lastSeen INTEGER)`);
-    
-    // 2. Add Indexes for insanely fast loading even with 1,000,000 messages
     db.run(`CREATE INDEX IF NOT EXISTS idx_history_roomId_time ON history(roomId, timestamp)`);
     
-    // 3. Ensure the main Lobby always exists
     db.get(`SELECT id FROM rooms WHERE id = 'lobby'`, (err, row) => {
-        if (!row) {
-            db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES ('lobby', 'Lobby 😸', '', 0, '')`);
-        }
+        if (!row) db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES ('lobby', 'Lobby 😸', '', 0, '')`);
     });
 });
 
@@ -36,7 +29,6 @@ function getUsersInRoom(roomId) {
     return Object.values(activeUsersById).filter(u => u.roomId === roomId).map(u => u.name);
 }
 
-// Helper to send the room list to everyone
 function broadcastRooms(targetSocket = io) {
     db.all(`SELECT id, name, logo, isPrivate FROM rooms`, (err, rows) => {
         if (rows) targetSocket.emit('room list', rows);
@@ -45,31 +37,21 @@ function broadcastRooms(targetSocket = io) {
 
 io.on('connection', (socket) => {
     
-    // Send rooms on connect
     broadcastRooms(socket);
 
     socket.on('create room', (data) => {
         const roomId = 'room_' + Date.now();
         const isPrivateInt = data.isPrivate ? 1 : 0;
-        
-        // 🌟 FIX: Save new rooms securely to the database
         db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES (?, ?, ?, ?, ?)`, 
             [roomId, data.name, '', isPrivateInt, data.password], 
-            (err) => {
-                if (!err) broadcastRooms();
-            }
+            (err) => { if (!err) broadcastRooms(); }
         );
     });
 
     socket.on('join room', (data) => {
-        // 🌟 FIX: Pull room directly from database so reboots don't break it
         db.get(`SELECT * FROM rooms WHERE id = ?`, [data.roomId], (err, room) => {
             if (!room) return socket.emit('error', 'Room not found');
-            
-            // Check password if private
-            if (room.isPrivate === 1 && room.password !== data.password) {
-                return socket.emit('join error', 'Incorrect Password');
-            }
+            if (room.isPrivate === 1 && room.password !== data.password) return socket.emit('join error', 'Incorrect Password');
 
             const oldRoomId = activeUsersById[socket.id]?.roomId;
             Array.from(socket.rooms).forEach(r => { if(r !== socket.id) socket.leave(r); });
@@ -83,17 +65,10 @@ io.on('connection', (socket) => {
 
             db.all("SELECT data FROM history WHERE roomId = ? ORDER BY timestamp ASC LIMIT 50", [room.id], (err, rows) => {
                 const history = rows ? rows.map(row => JSON.parse(row.data)) : [];
-                
-                // Format room object for the client
                 const clientRoom = { id: room.id, name: room.name, logo: room.logo, isPrivate: room.isPrivate === 1 };
-                socket.emit('chat history', { room: clientRoom, history: history });
                 
-                // Send pinned message if exists
-                if (room.pinnedMessage) {
-                    socket.emit('pinned updated', JSON.parse(room.pinnedMessage));
-                } else {
-                    socket.emit('pinned updated', null);
-                }
+                socket.emit('chat history', { room: clientRoom, history: history });
+                socket.emit('pinned updated', room.pinnedMessage ? JSON.parse(room.pinnedMessage) : null);
                 
                 if (!data.isReconnect) {
                     const sysMsg = { id: Date.now().toString(), type: 'system', text: `🚀 ${data.user.name} joined the group` };
@@ -111,32 +86,24 @@ io.on('connection', (socket) => {
             activeUsersById[socket.id].avatar = user.avatar;
             activeUsersById[socket.id].about = user.about;
         }
-        db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen) VALUES (?, ?, ?, ?, ?)", 
-            [user.name, user.avatar, user.about, 1, Date.now()]);
+        db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen) VALUES (?, ?, ?, ?, ?)", [user.name, user.avatar, user.about, 1, Date.now()]);
     });
 
     socket.on('get user info', (username) => {
-        db.get("SELECT * FROM users WHERE name = ?", [username], (err, row) => {
-            if (row) socket.emit('user info result', row);
-        });
+        db.get("SELECT * FROM users WHERE name = ?", [username], (err, row) => { if (row) socket.emit('user info result', row); });
     });
 
     socket.on('update group info', (data) => {
-        // Update room in DB
-        const updates = [];
-        const params = [];
+        const updates = []; const params = [];
         if (data.name) { updates.push("name = ?"); params.push(data.name); }
         if (data.logo) { updates.push("logo = ?"); params.push(data.logo); }
-        
         if (updates.length > 0) {
             params.push(data.roomId);
             db.run(`UPDATE rooms SET ${updates.join(', ')} WHERE id = ?`, params, (err) => {
                 if (!err) {
-                    broadcastRooms(); // Update list for everyone
+                    broadcastRooms();
                     db.get(`SELECT * FROM rooms WHERE id = ?`, [data.roomId], (err, room) => {
-                        if (room) {
-                            io.to(data.roomId).emit('group info updated', { id: room.id, name: room.name, logo: room.logo });
-                        }
+                        if (room) io.to(data.roomId).emit('group info updated', { id: room.id, name: room.name, logo: room.logo });
                     });
                 }
             });
@@ -155,6 +122,34 @@ io.on('connection', (socket) => {
         
         io.to(roomId).emit('chat message', data);
         socket.broadcast.emit('global room alert', roomId);
+
+        // 🌟 NEW: THE CHAT BOT LOGIC!
+        if (data.text && data.text.toLowerCase().startsWith('@bot')) {
+            setTimeout(() => {
+                const text = data.text.toLowerCase();
+                let botReply = "Beep boop! 🤖 I am the Chit Chat Bot. Ask me for a 'joke', 'flip a coin', or to say 'hello'!";
+                
+                if (text.includes('joke')) {
+                    botReply = "Why do programmers prefer dark mode? Because light attracts bugs! 🐛😸";
+                } else if (text.includes('coin')) {
+                    botReply = Math.random() > 0.5 ? "I flipped a coin: It landed on Heads! 🪙" : "I flipped a coin: It landed on Tails! 🪙";
+                } else if (text.includes('hello') || text.includes('hi')) {
+                    botReply = `Hello there, ${data.user}! Hope you are having a wonderful day! ✨`;
+                }
+
+                const botMsg = {
+                    id: Date.now().toString() + 'bot', user: '🤖 Bot',
+                    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=ChitChatBot&backgroundColor=00a884',
+                    text: botReply, type: 'chat', likes: 0, status: 'delivered',
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    isGhost: false
+                };
+
+                db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [botMsg.id, roomId, Date.now(), JSON.stringify(botMsg)]);
+                io.to(roomId).emit('chat message', botMsg);
+                socket.broadcast.emit('global room alert', roomId);
+            }, 1200); // 1.2 second delay so it feels natural!
+        }
     });
 
     socket.on('edit message', (data) => {
@@ -164,8 +159,7 @@ io.on('connection', (socket) => {
             if (row) {
                 const msg = JSON.parse(row.data);
                 if (msg.user === activeUsersById[socket.id].name) {
-                    msg.text = data.newText;
-                    msg.isEdited = true;
+                    msg.text = data.newText; msg.isEdited = true;
                     db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), data.msgId]);
                     io.to(roomId).emit('message edited', { id: data.msgId, newText: data.newText });
                 }
@@ -183,8 +177,7 @@ io.on('connection', (socket) => {
         if(!roomId) return;
         db.get("SELECT data FROM history WHERE id = ?", [msgId], (err, row) => {
             if (row) {
-                const msg = JSON.parse(row.data);
-                msg.likes += 1;
+                const msg = JSON.parse(row.data); msg.likes += 1;
                 db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), msgId]);
                 io.to(roomId).emit('update likes', { id: msgId, likes: msg.likes });
             }
@@ -201,23 +194,13 @@ io.on('connection', (socket) => {
     socket.on('pin message', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return;
-        const pinString = JSON.stringify(data.msg);
-        db.run(`UPDATE rooms SET pinnedMessage = ? WHERE id = ?`, [pinString, roomId], () => {
-            io.to(roomId).emit('pinned updated', data.msg);
-        });
+        db.run(`UPDATE rooms SET pinnedMessage = ? WHERE id = ?`, [JSON.stringify(data.msg), roomId], () => { io.to(roomId).emit('pinned updated', data.msg); });
     });
 
     socket.on('unpin message', () => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return;
-        db.run(`UPDATE rooms SET pinnedMessage = NULL WHERE id = ?`, [roomId], () => {
-            io.to(roomId).emit('pinned updated', null);
-        });
-    });
-
-    socket.on('mark read', () => {
-        const roomId = activeUsersById[socket.id]?.roomId;
-        if(roomId) io.to(roomId).emit('messages read'); 
+        db.run(`UPDATE rooms SET pinnedMessage = NULL WHERE id = ?`, [roomId], () => { io.to(roomId).emit('pinned updated', null); });
     });
 
     socket.on('disconnect', () => {
