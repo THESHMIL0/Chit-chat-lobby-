@@ -39,7 +39,7 @@ function broadcastRooms(targetSocket = io) {
     });
 }
 
-// 🌟 THE SUPER-BRAIN AI BOT
+// 🌟 THE SUPER-BRAIN AI BOT (Now using Gemini 2.5 Flash!)
 async function askSmartBot(prompt) {
     // 🛡️ SECURE: Grabbing the key from Render's vault! No hardcoded keys!
     const apiKey = process.env.GEMINI_API_KEY; 
@@ -50,7 +50,9 @@ async function askSmartBot(prompt) {
 
     try {
         const finalPrompt = prompt + " (Keep your response conversational, under 3 sentences, and use emojis. Act like a helpful chat friend.)";
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        
+        // 👇 FIX: Using the brand new gemini-2.5-flash model! 👇
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
