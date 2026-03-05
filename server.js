@@ -120,7 +120,6 @@ io.on('connection', (socket) => {
         });
     });
 
-    // 🌟 NEW: Listen for typing and broadcast to the room!
     socket.on('typing', (isTyping) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(roomId) {
@@ -174,7 +173,6 @@ io.on('connection', (socket) => {
             if (userData.roomId) {
                 delete activeUsersById[socket.id];
                 io.to(userData.roomId).emit('room users', getUsersInRoom(userData.roomId));
-                // Clear their typing status if they close the app while typing
                 io.to(userData.roomId).emit('user typing', { name: userData.name, isTyping: false });
             }
         }
