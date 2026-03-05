@@ -1,6 +1,5 @@
 const socket = io();
 
-// 🌟 ALWAYS sanitize text to prevent hackers!
 function escapeHTML(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
 
 const loginScreen = document.getElementById('login-screen');
@@ -32,10 +31,6 @@ const createRoomModal = document.getElementById('create-room-modal');
 const passwordModal = document.getElementById('password-modal');
 const msgOptionsModal = document.getElementById('message-options-modal');
 const viewProfileModal = document.getElementById('view-profile-modal');
-const lightbox = document.getElementById('lightbox');
-const lightboxImg = document.getElementById('lightbox-img');
-
-// 🌟 NEW: Group Info & Search Elements
 const groupInfoModal = document.getElementById('group-info-modal');
 const headerClickArea = document.getElementById('header-click-area');
 const infoRoomLogo = document.getElementById('info-room-logo');
@@ -43,6 +38,8 @@ const infoRoomName = document.getElementById('info-room-name');
 const chatSearchContainer = document.getElementById('chat-search-container');
 const chatSearchInput = document.getElementById('chat-search-input');
 const wallpaperUpload = document.getElementById('wallpaper-upload');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
 
 let currentUser = { name: '', avatar: '', about: 'Hey there! I am using Chit Chat.' };
 let activeRoomId = null;
@@ -58,6 +55,11 @@ let globalRoomList = [];
 let typingTimeout;
 let currentlyTyping = new Set();
 let baseOnlineText = "Tap to change info";
+
+// 🌟 NEW: Request Notification Permission on Load
+if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+    Notification.requestPermission();
+}
 
 function closeLightbox() { lightbox.classList.add('hidden'); lightboxImg.src = ''; }
 lightbox.addEventListener('click', closeLightbox);
@@ -81,6 +83,9 @@ document.getElementById('login-btn').addEventListener('click', () => {
     settingsUsername.value = currentUser.name;
     loginScreen.classList.add('hidden');
     roomListScreen.classList.remove('hidden');
+    
+    // Request notification permission again if they missed it
+    if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
 });
 
 document.getElementById('settings-btn').onclick = () => { roomListScreen.classList.add('hidden'); profileScreen.classList.remove('hidden'); };
@@ -141,21 +146,15 @@ document.getElementById('join-room-submit').onclick = () => {
     currentRoomPassword = document.getElementById('join-room-pass').value; joinRoom(pendingJoinRoom.id, currentRoomPassword, false); passwordModal.classList.add('hidden');
 };
 
-function joinRoom(roomId, password, isReconnect) {
-    socket.emit('join room', { roomId, password, user: currentUser, isReconnect });
-}
-
+function joinRoom(roomId, password, isReconnect) { socket.emit('join room', { roomId, password, user: currentUser, isReconnect }); }
 socket.on('connect', () => { if (currentUser.name && activeRoomId) joinRoom(activeRoomId, currentRoomPassword, true); });
 socket.on('join error', (msg) => alert(msg));
 
-// 🌟 Apply custom wallpapers when joining a room!
 socket.on('chat history', (data) => {
     roomListScreen.classList.add('hidden'); chatScreen.classList.remove('hidden');
-    activeRoomId = data.room.id;
-    unreadCounts[activeRoomId] = 0; renderRoomList();
+    activeRoomId = data.room.id; unreadCounts[activeRoomId] = 0; renderRoomList();
     updateGroupHeader(data.room);
     
-    // Load Custom Wallpaper
     const savedWallpaper = localStorage.getItem('wallpaper_' + activeRoomId);
     if (savedWallpaper) chatScreen.style.backgroundImage = `url(${savedWallpaper})`;
     else chatScreen.style.backgroundImage = `url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')`;
@@ -176,276 +175,12 @@ function updateHeaderSubtitle() {
 }
 
 socket.on('room users', (usersList) => {
-    if (usersList.length <= 1) { 
-        baseOnlineText = "Only you are here";
-    } else { 
-        const others = usersList.filter(u => u !== currentUser.name); 
-        baseOnlineText = "Online: You, " + others.join(', '); 
-    }
+    if (usersList.length <= 1) { baseOnlineText = "Only you are here";
+    } else { const others = usersList.filter(u => u !== currentUser.name); baseOnlineText = "Online: You, " + others.join(', '); }
     updateHeaderSubtitle();
 });
 
 socket.on('user typing', (data) => {
-    if (data.isTyping) currentlyTyping.add(data.name);
-    else currentlyTyping.delete(data.name);
+    if (data.isTyping) currentlyTyping.add(data.name); else currentlyTyping.delete(data.name);
     updateHeaderSubtitle();
 });
-// Modals closing logic
-[createRoomModal, passwordModal, msgOptionsModal, viewProfileModal, groupInfoModal].forEach(modal => {
-    modal.addEventListener('click', (e) => { if(e.target === modal) modal.classList.add('hidden'); });
-});
-
-document.getElementById('back-btn').onclick = (e) => { 
-    e.stopPropagation(); chatScreen.classList.add('hidden'); roomListScreen.classList.remove('hidden'); 
-    activeRoomId = null; isGhostMode = false; ghostBtn.classList.remove('active'); 
-    currentlyTyping.clear(); 
-};
-
-function updateGroupHeader(room) {
-    currentRoomName.textContent = room.name; 
-    currentRoomLogo.src = room.logo || `https://api.dicebear.com/7.x/shapes/svg?seed=${room.id}`;
-}
-socket.on('group info updated', updateGroupHeader);
-
-// 🌟 NEW: Open the Group Info Page
-headerClickArea.onclick = () => {
-    infoRoomLogo.src = currentRoomLogo.src;
-    infoRoomName.value = currentRoomName.textContent;
-    groupInfoModal.classList.remove('hidden');
-};
-
-document.getElementById('save-group-info-btn').onclick = () => {
-    const newName = infoRoomName.value.trim();
-    if(newName) {
-        socket.emit('update group info', { roomId: activeRoomId, name: newName });
-        groupInfoModal.classList.add('hidden');
-    }
-};
-
-groupPicUpload.addEventListener('change', function() {
-    if (this.files[0]) {
-        const reader = new FileReader(); 
-        reader.onload = (e) => {
-            infoRoomLogo.src = e.target.result;
-            socket.emit('update group info', { roomId: activeRoomId, logo: e.target.result }); 
-        };
-        reader.readAsDataURL(this.files[0]);
-    }
-});
-
-// 🌟 NEW: Custom Wallpaper Logic
-document.getElementById('btn-change-wallpaper').onclick = () => wallpaperUpload.click();
-wallpaperUpload.addEventListener('change', function() {
-    if (this.files[0]) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            localStorage.setItem('wallpaper_' + activeRoomId, e.target.result);
-            chatScreen.style.backgroundImage = `url(${e.target.result})`;
-            groupInfoModal.classList.add('hidden');
-        };
-        reader.readAsDataURL(this.files[0]);
-    }
-});
-
-document.getElementById('btn-reset-wallpaper').onclick = () => {
-    localStorage.removeItem('wallpaper_' + activeRoomId);
-    chatScreen.style.backgroundImage = `url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')`;
-    groupInfoModal.classList.add('hidden');
-};
-
-// 🌟 NEW: Search Chat Logic
-document.getElementById('btn-open-search').onclick = () => {
-    groupInfoModal.classList.add('hidden');
-    chatSearchContainer.classList.remove('hidden');
-    chatSearchInput.focus();
-};
-
-document.getElementById('close-search-btn').onclick = () => {
-    chatSearchContainer.classList.add('hidden');
-    chatSearchInput.value = '';
-    // Unhide everything and remove highlights
-    document.querySelectorAll('#messages li').forEach(li => {
-        li.style.display = 'flex';
-        const txtNode = li.querySelector('.message-text');
-        if(txtNode) txtNode.innerHTML = txtNode.innerHTML.replace(/<span class="highlight">(.*?)<\/span>/g, '$1');
-    });
-};
-
-chatSearchInput.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase();
-    const allMsgs = document.querySelectorAll('#messages li');
-    
-    allMsgs.forEach(li => {
-        if(li.classList.contains('system-message')) { li.style.display = query ? 'none' : 'flex'; return; }
-        
-        const textNode = li.querySelector('.message-text');
-        if(!textNode) return; // Ignore images for now
-        
-        // Reset text first
-        let rawText = textNode.textContent.replace('(edited)', '').trim();
-        
-        if (query === '') {
-            li.style.display = 'flex';
-            textNode.innerHTML = escapeHTML(rawText) + (li.innerHTML.includes('(edited)') ? `<span class="edited-tag">(edited)</span>` : '');
-        } else if (rawText.toLowerCase().includes(query)) {
-            li.style.display = 'flex';
-            // Highlight the word
-            const regex = new RegExp(`(${query})`, "gi");
-            const highlighted = escapeHTML(rawText).replace(regex, `<span class="highlight">$1</span>`);
-            textNode.innerHTML = highlighted + (li.innerHTML.includes('(edited)') ? `<span class="edited-tag">(edited)</span>` : '');
-        } else {
-            li.style.display = 'none';
-        }
-    });
-});
-
-ghostBtn.onclick = () => { isGhostMode = !isGhostMode; ghostBtn.classList.toggle('active', isGhostMode); };
-
-input.addEventListener('input', () => { 
-    if(editingMsgId) sendMicBtn.innerHTML = '✔'; else sendMicBtn.innerHTML = input.value.trim() ? '➤' : '🎤'; 
-    socket.emit('typing', true);
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => socket.emit('typing', false), 1500); 
-});
-
-function sendMessage() {
-    const text = input.value.trim();
-    if (text) {
-        socket.emit('typing', false); 
-        if (editingMsgId) { socket.emit('edit message', { msgId: editingMsgId, newText: text }); editingMsgId = null;
-        } else { socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), replyTo: replyingTo, isGhost: isGhostMode }); }
-        input.value = ''; sendMicBtn.innerHTML = '🎤'; replyingTo = null; replyPreviewContainer.classList.add('hidden');
-    }
-}
-sendMicBtn.addEventListener('click', sendMessage);
-input.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
-
-attachBtn.onclick = () => imageUpload.click();
-imageUpload.addEventListener('change', function() {
-    if (this.files[0]) {
-        const reader = new FileReader(); reader.onload = (e) => {
-            const img = new Image(); img.src = e.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas'); let w = img.width, h = img.height;
-                if(w > 600) { h *= 600/w; w = 600; } canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text: '', uploadedImage: canvas.toDataURL('image/jpeg', 0.8), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
-                imageUpload.value = '';
-            };
-        }; reader.readAsDataURL(this.files[0]);
-    }
-});
-
-let pressTimer;
-messages.addEventListener('touchstart', (e) => {
-    if (e.target.classList.contains('chat-image') || e.target.classList.contains('avatar-small')) return;
-    const li = e.target.closest('li.my-message, li.other-message');
-    if (!li) return;
-    pressTimer = setTimeout(() => {
-        selectedMsgId = li.id.replace('msg-', '');
-        if (li.classList.contains('my-message') && li.querySelector('.message-text')) document.getElementById('opt-edit').classList.remove('hidden');
-        else document.getElementById('opt-edit').classList.add('hidden');
-        msgOptionsModal.classList.remove('hidden');
-    }, 500); 
-}, { passive: true });
-messages.addEventListener('touchend', () => clearTimeout(pressTimer));
-messages.addEventListener('touchmove', () => clearTimeout(pressTimer));
-
-document.getElementById('opt-delete').onclick = () => { socket.emit('delete message', selectedMsgId); msgOptionsModal.classList.add('hidden'); };
-document.getElementById('opt-like').onclick = () => { socket.emit('like message', selectedMsgId); msgOptionsModal.classList.add('hidden'); };
-document.getElementById('opt-pin').onclick = () => { 
-    const li = document.getElementById(`msg-${selectedMsgId}`); socket.emit('pin message', { msg: { user: li.dataset.sender, text: li.querySelector('.message-text')?.innerText || 'Attachment' }}); msgOptionsModal.classList.add('hidden'); 
-};
-document.getElementById('opt-edit').onclick = () => {
-    const li = document.getElementById(`msg-${selectedMsgId}`);
-    const currentText = li.querySelector('.message-text').innerText.replace('(edited)', '').trim();
-    input.value = currentText; editingMsgId = selectedMsgId; sendMicBtn.innerHTML = '✔'; input.focus(); msgOptionsModal.classList.add('hidden');
-};
-document.getElementById('opt-reply').onclick = () => {
-    const li = document.getElementById(`msg-${selectedMsgId}`); replyingTo = { user: li.dataset.sender, text: li.querySelector('.message-text')?.innerText || 'Attachment' };
-    document.getElementById('reply-preview-text').innerHTML = `<b style="color: #00a884; font-size: 13px;">${escapeHTML(replyingTo.user)}</b><br><span style="color: #54656f; font-size: 13px;">${escapeHTML(replyingTo.text).substring(0,40)}...</span>`;
-    replyPreviewContainer.classList.remove('hidden'); input.focus(); msgOptionsModal.classList.add('hidden');
-};
-document.getElementById('cancel-reply-btn').onclick = () => { replyingTo = null; replyPreviewContainer.classList.add('hidden'); }
-document.getElementById('unpin-btn').onclick = () => socket.emit('unpin message');
-
-socket.on('pinned updated', (pinnedMsg) => {
-    const pinnedBanner = document.getElementById('pinned-banner');
-    if (pinnedMsg) { document.getElementById('pinned-user').textContent = pinnedMsg.user; document.getElementById('pinned-text').textContent = pinnedMsg.text; pinnedBanner.classList.remove('hidden');
-    } else { pinnedBanner.classList.add('hidden'); }
-});
-
-socket.on('chat message', (data) => displayMessage(data, false));
-socket.on('update likes', (data) => { const l = document.getElementById(`like-count-${data.id}`); if(l) l.textContent = data.likes > 0 ? data.likes : ''; });
-socket.on('message deleted', (id) => { const el = document.getElementById(`msg-${id}`); if(el) el.querySelector('.message-text').innerHTML = '<i style="color:#8696a0">🚫 Message deleted</i>'; });
-
-socket.on('message edited', (data) => {
-    const el = document.getElementById(`msg-${data.id}`);
-    if (el) { const textNode = el.querySelector('.message-text'); textNode.innerHTML = escapeHTML(data.newText) + `<span class="edited-tag">(edited)</span>`; }
-});
-
-function displayMessage(data, isHistory) {
-    const li = document.createElement('li'); li.id = `msg-${data.id}`; li.dataset.sender = data.user;
-    if (data.type === 'system') { li.className = 'system-message'; li.textContent = data.text; messages.appendChild(li); messages.scrollTop = messages.scrollHeight; return; }
-
-    const isMe = data.user === currentUser.name;
-    const lastMsg = messages.lastElementChild;
-    const isStacked = (lastMsg && !lastMsg.classList.contains('system-message') && lastMsg.dataset.sender === data.user);
-
-    li.className = isMe ? 'my-message' : 'other-message';
-    if(isStacked) li.classList.add('stacked');
-    if(data.isGhost) li.classList.add('ghost-message');
-
-    let contentText = escapeHTML(data.text);
-    if(data.isEdited) contentText += `<span class="edited-tag">(edited)</span>`;
-    let content = data.uploadedImage ? `<img src="${data.uploadedImage}" class="chat-image">` : `<span class="message-text">${contentText}</span>`;
-    
-    let replyHTML = ''; 
-    if (data.replyTo) { replyHTML = `<div class="replied-to"><div class="replied-to-user">${escapeHTML(data.replyTo.user)}</div><div class="replied-to-text">${escapeHTML(data.replyTo.text).substring(0, 60)}</div></div>`; }
-    let ticks = isMe ? `<span class="ticks delivered">✔✔</span>` : '';
-    let ghostIcon = data.isGhost ? '⏱️ ' : '';
-
-    li.innerHTML = `
-        ${!isMe && !isStacked ? `<img src="${data.avatar}" class="avatar-small" data-name="${data.user}">` : ''}
-        ${!isStacked ? `<span class="sender-name" style="color:${isMe ? '#00a884' : '#ea005e'}">${isMe ? 'You' : data.user}</span>` : ''}
-        ${replyHTML}
-        ${content}
-        <div class="meta-row">
-            <span class="likes-badge" id="like-count-${data.id}">${data.likes > 0 ? '❤️ ' + data.likes : ''}</span>
-            <span>${ghostIcon}${data.time}</span>
-            ${ticks}
-        </div>
-    `;
-    messages.appendChild(li); messages.scrollTop = messages.scrollHeight;
-
-    if (data.isGhost && !isHistory) {
-        setTimeout(() => { if (li) li.remove(); if (isMe) socket.emit('delete message', data.id); }, 10000);
-    }
-}
-
-document.getElementById('messages').addEventListener('click', (e) => { 
-    if(e.target.classList.contains('chat-image')) { document.getElementById('lightbox-img').src = e.target.src; document.getElementById('lightbox').classList.remove('hidden'); } 
-    if(e.target.classList.contains('avatar-small')) {
-        const friendName = e.target.dataset.name;
-        socket.emit('get user info', friendName);
-    }
-});
-
-socket.on('user info result', (user) => {
-    document.getElementById('view-profile-avatar').src = user.avatar;
-    document.getElementById('view-profile-name').textContent = user.name;
-    document.getElementById('view-profile-about').textContent = user.about;
-    
-    const lastSeenEl = document.getElementById('view-profile-last-seen');
-    if (user.isOnline) {
-        lastSeenEl.innerHTML = '🟢 Online'; lastSeenEl.style.color = '#00a884';
-    } else {
-        const dateObj = new Date(user.lastSeen);
-        const timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const isToday = dateObj.toDateString() === new Date().toDateString();
-        lastSeenEl.innerHTML = `Last seen ${isToday ? 'Today' : dateObj.toLocaleDateString()} at ${timeString}`; lastSeenEl.style.color = '#8696a0'; 
-    }
-    viewProfileModal.classList.remove('hidden');
-});
-
-document.getElementById('theme-toggle').onclick = () => document.body.classList.toggle('dark-mode');
