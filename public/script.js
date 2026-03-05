@@ -1,5 +1,8 @@
 const socket = io();
 
+// 🌟 FIX: Moved to the absolute top to sanitize EVERYTHING and prevent hacks.
+function escapeHTML(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+
 const loginScreen = document.getElementById('login-screen');
 const roomListScreen = document.getElementById('room-list-screen');
 const chatScreen = document.getElementById('chat-screen');
@@ -43,7 +46,6 @@ let isGhostMode = false;
 let unreadCounts = {}; 
 let globalRoomList = [];
 
-// Trackers for the beautiful typing indicators
 let typingTimeout;
 let currentlyTyping = new Set();
 let baseOnlineText = "Tap to change info";
@@ -88,15 +90,14 @@ function renderRoomList() {
         const li = document.createElement('li');
         li.className = 'room-item';
         const logoUrl = room.logo || `https://api.dicebear.com/7.x/shapes/svg?seed=${room.id}`;
-        
-        // Show unread badge if someone messaged while you were away!
         const unreadCount = unreadCounts[room.id] || 0;
         const badgeHTML = unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : '';
 
+        // 🌟 FIX: escapeHTML() on room.name prevents hackers from injecting malicious scripts here!
         li.innerHTML = `
-            <img src="${logoUrl}">
+            <img src="${escapeHTML(logoUrl)}">
             <div class="room-info">
-                <span class="room-name">${room.name}</span>
+                <span class="room-name">${escapeHTML(room.name)}</span>
                 <span class="room-status">${room.isPrivate ? '🔒 Private' : '🌐 Public'}</span>
             </div>
             ${badgeHTML}
@@ -148,7 +149,6 @@ socket.on('chat history', (data) => {
     data.history.forEach(msg => displayMessage(msg, true));
 });
 
-// Update the header with the pulsing typing indicator or the regular online list
 function updateHeaderSubtitle() {
     if (currentlyTyping.size > 0) {
         const typers = Array.from(currentlyTyping).join(', ');
@@ -203,7 +203,6 @@ ghostBtn.onclick = () => { isGhostMode = !isGhostMode; ghostBtn.classList.toggle
 input.addEventListener('input', () => { 
     if(editingMsgId) sendMicBtn.innerHTML = '✔'; else sendMicBtn.innerHTML = input.value.trim() ? '➤' : '🎤'; 
     
-    // Broadcast your typing to the room!
     socket.emit('typing', true);
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => socket.emit('typing', false), 1500); 
@@ -284,8 +283,6 @@ socket.on('message edited', (data) => {
     const el = document.getElementById(`msg-${data.id}`);
     if (el) { const textNode = el.querySelector('.message-text'); textNode.innerHTML = escapeHTML(data.newText) + `<span class="edited-tag">(edited)</span>`; }
 });
-
-function escapeHTML(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
 
 function displayMessage(data, isHistory) {
     const li = document.createElement('li'); li.id = `msg-${data.id}`; li.dataset.sender = data.user;
