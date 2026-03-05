@@ -67,15 +67,21 @@
     </div>
 
     <div id="chat-screen" class="screen hidden">
-        <div class="app-header" id="chat-header" onclick="document.getElementById('group-pic-upload').click()">
+        <div class="app-header" id="chat-header">
             <button id="back-btn" class="icon-btn" style="margin-right:10px;">⬅</button>
-            <img id="current-room-logo" src="" class="header-avatar">
-            <div class="header-text-container">
-                <span id="current-room-name"></span>
-                <span class="header-subtitle" id="online-users-text">Tap to change info</span>
+            <div id="header-click-area" style="display:flex; align-items:center; flex-grow:1; cursor:pointer;">
+                <img id="current-room-logo" src="" class="header-avatar">
+                <div class="header-text-container">
+                    <span id="current-room-name"></span>
+                    <span class="header-subtitle" id="online-users-text">Tap for group info</span>
+                </div>
             </div>
         </div>
-        <input type="file" id="group-pic-upload" accept="image/*" class="hidden" />
+
+        <div id="chat-search-container" class="hidden">
+            <input type="text" id="chat-search-input" placeholder="Search in conversation..." autocomplete="nope">
+            <button id="close-search-btn">✖</button>
+        </div>
         
         <div id="pinned-banner" class="hidden">
             <div>📌 <b id="pinned-user"></b>: <span id="pinned-text"></span></div>
@@ -98,6 +104,31 @@
                 <button id="ghost-btn" class="icon-btn" style="font-size: 20px;">👻</button>
             </div>
             <button id="send-mic-btn" class="circle-btn">🎤</button>
+        </div>
+    </div>
+
+    <div id="group-info-modal" class="modal hidden">
+        <div class="modal-content" style="align-items: center;">
+            <div class="modal-drag-pill"></div>
+            
+            <div id="info-avatar-container" onclick="document.getElementById('group-pic-upload').click()">
+                <img id="info-room-logo" src="">
+                <div class="edit-icon">📷</div>
+            </div>
+            <input type="file" id="group-pic-upload" accept="image/*" class="hidden" />
+
+            <div class="input-with-icon" style="width: 100%;">
+                <span class="input-icon">🏷️</span>
+                <input type="text" id="info-room-name" class="premium-input" placeholder="Group Name">
+            </div>
+            <button id="save-group-info-btn" class="primary-btn" style="margin-bottom: 25px;">Save Name</button>
+
+            <div class="menu-list" style="width: 100%;">
+                <button id="btn-open-search" class="menu-btn"><span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;">🔍</span> Search Chat</button>
+                <button id="btn-change-wallpaper" class="menu-btn"><span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: #00a884;">🖼️</span> Set Wallpaper</button>
+                <button id="btn-reset-wallpaper" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Reset Wallpaper</button>
+                <input type="file" id="wallpaper-upload" accept="image/*" class="hidden">
+            </div>
         </div>
     </div>
 
