@@ -44,9 +44,9 @@ function broadcastRooms(targetSocket = io) {
 // 🌟 NEW: The AI Brain Function
 async function askSmartBot(prompt) {
     // 👇 BOSS, PUT YOUR FREE GEMINI API KEY IN THESE QUOTES! 👇
-    const apiKey = 'YOUR_GEMINI_API_KEY'; 
+    const apiKey = 'AIzaSyCdKWPml3o8oCMH49_d_ePvuFCENFQsLDk'; 
 
-    if (apiKey === 'YOUR_GEMINI_API_KEY') {
+    if (apiKey === 'AIzaSyCdKWPml3o8oCMH49_d_ePvuFCENFQsLDk') {
         const fallbacks = [
             "I am super smart, but my boss needs to give me an API Key first! 😸",
             "Beep boop! 🤖 Tell the admin to put a Gemini API key in my brain!",
