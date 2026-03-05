@@ -6,7 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 1e8 }); 
+const io = new Server(server, { maxHttpBufferSize: 1e8 }); // Allows up to 100MB videos!
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -18,12 +18,10 @@ db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY, avatar TEXT, about TEXT, isOnline INTEGER, lastSeen INTEGER)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_history_roomId_time ON history(roomId, timestamp)`);
     
-    // Create Default Lobby
     db.get(`SELECT id FROM rooms WHERE id = 'lobby'`, (err, row) => {
         if (!row) db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES ('lobby', 'Lobby 😸', '', 0, '')`);
     });
 
-    // 🌟 NEW: Create the permanent AI Lounge room!
     db.get(`SELECT id FROM rooms WHERE id = 'ai_lounge'`, (err, row) => {
         if (!row) db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES ('ai_lounge', '🤖 AI Lounge', 'https://api.dicebear.com/7.x/bottts/svg?seed=ChitChatBot&backgroundColor=00a884', 0, '')`);
     });
@@ -41,24 +39,11 @@ function broadcastRooms(targetSocket = io) {
     });
 }
 
-// 🌟 NEW: The AI Brain Function
 async function askSmartBot(prompt) {
-    // 👇 BOSS, PUT YOUR FREE GEMINI API KEY IN THESE QUOTES! 👇
     const apiKey = 'AIzaSyCdKWPml3o8oCMH49_d_ePvuFCENFQsLDk'; 
 
-    if (apiKey === 'AIzaSyCdKWPml3o8oCMH49_d_ePvuFCENFQsLDk') {
-        const fallbacks = [
-            "I am super smart, but my boss needs to give me an API Key first! 😸",
-            "Beep boop! 🤖 Tell the admin to put a Gemini API key in my brain!",
-            "I would tell you the meaning of life, but I am locked without my API key! 🔐"
-        ];
-        return fallbacks[Math.floor(Math.random() * fallbacks.length)];
-    }
-
     try {
-        // We tell the AI to act like a chat buddy
         const finalPrompt = prompt + " (Keep your response conversational, under 3 sentences, and use emojis. Act like a helpful chat friend.)";
-        
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -150,7 +135,7 @@ io.on('connection', (socket) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return; 
         data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
-        data.type = 'chat'; data.likes = 0; data.status = 'delivered';
+        data.type = 'chat'; data.likes = 0; data.status = 'delivered'; // 🌟 Tracking delivery!
         
         if (!data.isGhost) {
             db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [data.id, roomId, Date.now(), JSON.stringify(data)]);
@@ -159,22 +144,16 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('chat message', data);
         socket.broadcast.emit('global room alert', roomId);
 
-        // 🌟 NEW: THE INTELLIGENT CHAT BOT LOGIC
         const isBotMentioned = data.text && data.text.toLowerCase().includes('@bot');
         const isAiLounge = roomId === 'ai_lounge';
 
-        // Don't let the bot reply to itself!
         if (data.user !== '🤖 Bot' && (isBotMentioned || isAiLounge)) {
-            
-            // Show everyone the bot is "typing..."
             socket.to(roomId).emit('user typing', { name: '🤖 Bot', isTyping: true });
             
             setTimeout(async () => {
-                // Clean the prompt
                 let prompt = data.text.replace(/@bot/gi, '').trim();
                 if (!prompt) prompt = "Say hello to everyone!";
                 
-                // Get the intelligent reply
                 let botReply = await askSmartBot(prompt);
 
                 const botMsg = {
@@ -185,13 +164,33 @@ io.on('connection', (socket) => {
                     isGhost: false
                 };
 
-                // Stop typing and send message
                 io.to(roomId).emit('user typing', { name: '🤖 Bot', isTyping: false });
-                
                 db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [botMsg.id, roomId, Date.now(), JSON.stringify(botMsg)]);
                 io.to(roomId).emit('chat message', botMsg);
                 socket.broadcast.emit('global room alert', roomId);
-            }, 1500); // 1.5 second delay so it feels natural!
+            }, 1500);
+        }
+    });
+
+    // 🌟 NEW: THE BLUE TICK LISTENER
+    socket.on('mark read', () => {
+        const roomId = activeUsersById[socket.id]?.roomId;
+        const username = activeUsersById[socket.id]?.name;
+        if(roomId && username) {
+            db.all("SELECT * FROM history WHERE roomId = ?", [roomId], (err, rows) => {
+                if (rows) {
+                    rows.forEach(row => {
+                        const msg = JSON.parse(row.data);
+                        // If it's someone else's message and we haven't read it yet...
+                        if (msg.user !== username && msg.status !== 'read') {
+                            msg.status = 'read';
+                            db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), row.id]);
+                        }
+                    });
+                }
+            });
+            // Tell everyone in the room to turn their grey ticks Blue!
+            socket.to(roomId).emit('messages read'); 
         }
     });
 
