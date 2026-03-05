@@ -43,6 +43,11 @@ let isGhostMode = false;
 let unreadCounts = {}; 
 let globalRoomList = [];
 
+// 🌟 NEW: Typing State Trackers
+let typingTimeout;
+let currentlyTyping = new Set();
+let baseOnlineText = "Tap to change info";
+
 function closeLightbox() { lightbox.classList.add('hidden'); lightboxImg.src = ''; }
 lightbox.addEventListener('click', closeLightbox);
 lightbox.addEventListener('touchstart', closeLightbox, { passive: true });
@@ -73,7 +78,6 @@ document.getElementById('close-profile-btn').onclick = () => { profileScreen.cla
 document.getElementById('save-profile-btn').onclick = () => {
     if(settingsUsername.value.trim()) currentUser.name = settingsUsername.value.trim();
     if(settingsAbout.value.trim()) currentUser.about = settingsAbout.value.trim();
-    // 🌟 NEW: Tell the server we updated our profile instantly
     socket.emit('update profile', currentUser);
     profileScreen.classList.add('hidden'); roomListScreen.classList.remove('hidden');
 };
@@ -142,9 +146,33 @@ socket.on('chat history', (data) => {
     data.history.forEach(msg => displayMessage(msg, true));
 });
 
+// 🌟 NEW: Manage header subtitle depending on who is typing
+function updateHeaderSubtitle() {
+    if (currentlyTyping.size > 0) {
+        const typers = Array.from(currentlyTyping).join(', ');
+        onlineUsersText.textContent = `${typers} is typing...`;
+        onlineUsersText.classList.add('typing-text-active');
+    } else {
+        onlineUsersText.textContent = baseOnlineText;
+        onlineUsersText.classList.remove('typing-text-active');
+    }
+}
+
 socket.on('room users', (usersList) => {
-    if (usersList.length <= 1) { onlineUsersText.textContent = "Only you are here";
-    } else { const others = usersList.filter(u => u !== currentUser.name); onlineUsersText.textContent = "Online: You, " + others.join(', '); }
+    if (usersList.length <= 1) { 
+        baseOnlineText = "Only you are here";
+    } else { 
+        const others = usersList.filter(u => u !== currentUser.name); 
+        baseOnlineText = "Online: You, " + others.join(', '); 
+    }
+    updateHeaderSubtitle();
+});
+
+// 🌟 NEW: Receive typing broadcasts from server
+socket.on('user typing', (data) => {
+    if (data.isTyping) currentlyTyping.add(data.name);
+    else currentlyTyping.delete(data.name);
+    updateHeaderSubtitle();
 });
 
 createRoomModal.addEventListener('click', (e) => { if(e.target === createRoomModal) createRoomModal.classList.add('hidden'); });
@@ -155,6 +183,7 @@ viewProfileModal.addEventListener('click', (e) => { if(e.target === viewProfileM
 document.getElementById('back-btn').onclick = (e) => { 
     e.stopPropagation(); chatScreen.classList.add('hidden'); roomListScreen.classList.remove('hidden'); 
     activeRoomId = null; isGhostMode = false; ghostBtn.classList.remove('active'); 
+    currentlyTyping.clear(); // Clear typing memory when leaving
 };
 
 function updateGroupHeader(room) {
@@ -170,11 +199,19 @@ groupPicUpload.addEventListener('change', function() {
 
 ghostBtn.onclick = () => { isGhostMode = !isGhostMode; ghostBtn.classList.toggle('active', isGhostMode); };
 
-input.addEventListener('input', () => { if(editingMsgId) sendMicBtn.innerHTML = '✔'; else sendMicBtn.innerHTML = input.value.trim() ? '➤' : '🎤'; });
+// 🌟 NEW: Track when YOU are typing and tell the server
+input.addEventListener('input', () => { 
+    if(editingMsgId) sendMicBtn.innerHTML = '✔'; else sendMicBtn.innerHTML = input.value.trim() ? '➤' : '🎤'; 
+    
+    socket.emit('typing', true);
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => socket.emit('typing', false), 1500); // Stop after 1.5s of no typing
+});
 
 function sendMessage() {
     const text = input.value.trim();
     if (text) {
+        socket.emit('typing', false); // Instantly stop typing indicator when sending
         if (editingMsgId) { socket.emit('edit message', { msgId: editingMsgId, newText: text }); editingMsgId = null;
         } else { socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), replyTo: replyingTo, isGhost: isGhostMode }); }
         input.value = ''; sendMicBtn.innerHTML = '🎤'; replyingTo = null; replyPreviewContainer.classList.add('hidden');
@@ -288,17 +325,14 @@ function displayMessage(data, isHistory) {
     }
 }
 
-// 🌟 NEW: Fetch live data from Database when clicking an avatar!
 document.getElementById('messages').addEventListener('click', (e) => { 
     if(e.target.classList.contains('chat-image')) { document.getElementById('lightbox-img').src = e.target.src; document.getElementById('lightbox').classList.remove('hidden'); } 
     if(e.target.classList.contains('avatar-small')) {
         const friendName = e.target.dataset.name;
-        // Ask the server for their exact info from the database
         socket.emit('get user info', friendName);
     }
 });
 
-// 🌟 NEW: Render the live data in the modal
 socket.on('user info result', (user) => {
     document.getElementById('view-profile-avatar').src = user.avatar;
     document.getElementById('view-profile-name').textContent = user.name;
@@ -306,15 +340,12 @@ socket.on('user info result', (user) => {
     
     const lastSeenEl = document.getElementById('view-profile-last-seen');
     if (user.isOnline) {
-        lastSeenEl.innerHTML = '🟢 Online';
-        lastSeenEl.style.color = '#00a884';
+        lastSeenEl.innerHTML = '🟢 Online'; lastSeenEl.style.color = '#00a884';
     } else {
         const dateObj = new Date(user.lastSeen);
         const timeString = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const isToday = dateObj.toDateString() === new Date().toDateString();
-        
-        lastSeenEl.innerHTML = `Last seen ${isToday ? 'Today' : dateObj.toLocaleDateString()} at ${timeString}`;
-        lastSeenEl.style.color = '#8696a0'; // Gray
+        lastSeenEl.innerHTML = `Last seen ${isToday ? 'Today' : dateObj.toLocaleDateString()} at ${timeString}`; lastSeenEl.style.color = '#8696a0'; 
     }
     viewProfileModal.classList.remove('hidden');
 });
