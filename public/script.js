@@ -1,5 +1,6 @@
 const socket = io();
 
+// 🌟 ALWAYS sanitize text to prevent hackers!
 function escapeHTML(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
 
 const loginScreen = document.getElementById('login-screen');
@@ -56,7 +57,6 @@ let typingTimeout;
 let currentlyTyping = new Set();
 let baseOnlineText = "Tap to change info";
 
-// 🌟 NEW: Request Notification Permission on Load
 if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
     Notification.requestPermission();
 }
@@ -84,7 +84,6 @@ document.getElementById('login-btn').addEventListener('click', () => {
     loginScreen.classList.add('hidden');
     roomListScreen.classList.remove('hidden');
     
-    // Request notification permission again if they missed it
     if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
 });
 
@@ -161,6 +160,16 @@ socket.on('chat history', (data) => {
 
     messages.innerHTML = '';
     data.history.forEach(msg => displayMessage(msg, true));
+
+    // 🌟 BLUE TICKS: Tell the server we read the history!
+    socket.emit('mark read');
+});
+
+// 🌟 BLUE TICKS: If we come back to the app, mark current chat as read
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && activeRoomId) {
+        socket.emit('mark read');
+    }
 });
 
 function updateHeaderSubtitle() {
@@ -201,7 +210,6 @@ function updateGroupHeader(room) {
 }
 socket.on('group info updated', updateGroupHeader);
 
-// 🌟 NEW: Open the Group Info Page
 headerClickArea.onclick = () => {
     infoRoomLogo.src = currentRoomLogo.src;
     infoRoomName.value = currentRoomName.textContent;
@@ -257,7 +265,6 @@ document.getElementById('btn-open-search').onclick = () => {
 document.getElementById('close-search-btn').onclick = () => {
     chatSearchContainer.classList.add('hidden');
     chatSearchInput.value = '';
-    // Unhide everything and remove highlights
     document.querySelectorAll('#messages li').forEach(li => {
         li.style.display = 'flex';
         const txtNode = li.querySelector('.message-text');
@@ -273,9 +280,8 @@ chatSearchInput.addEventListener('input', (e) => {
         if(li.classList.contains('system-message')) { li.style.display = query ? 'none' : 'flex'; return; }
         
         const textNode = li.querySelector('.message-text');
-        if(!textNode) return; // Ignore images for now
+        if(!textNode) return; 
         
-        // Reset text first
         let rawText = textNode.textContent.replace('(edited)', '').trim();
         
         if (query === '') {
@@ -283,7 +289,6 @@ chatSearchInput.addEventListener('input', (e) => {
             textNode.innerHTML = escapeHTML(rawText) + (li.innerHTML.includes('(edited)') ? `<span class="edited-tag">(edited)</span>` : '');
         } else if (rawText.toLowerCase().includes(query)) {
             li.style.display = 'flex';
-            // Highlight the word
             const regex = new RegExp(`(${query})`, "gi");
             const highlighted = escapeHTML(rawText).replace(regex, `<span class="highlight">$1</span>`);
             textNode.innerHTML = highlighted + (li.innerHTML.includes('(edited)') ? `<span class="edited-tag">(edited)</span>` : '');
@@ -314,25 +319,45 @@ function sendMessage() {
 sendMicBtn.addEventListener('click', sendMessage);
 input.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
 
+// 🌟 VIDEO & GIF SUPPORT ENGINE
 attachBtn.onclick = () => imageUpload.click();
 imageUpload.addEventListener('change', function() {
     if (this.files[0]) {
-        const reader = new FileReader(); reader.onload = (e) => {
-            const img = new Image(); img.src = e.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas'); let w = img.width, h = img.height;
-                if(w > 600) { h *= 600/w; w = 600; } canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text: '', uploadedImage: canvas.toDataURL('image/jpeg', 0.8), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
+        const file = this.files[0];
+        const reader = new FileReader(); 
+        reader.onload = (e) => {
+            const fileData = e.target.result;
+            
+            // Check if it's a video!
+            if (file.type.startsWith('video/')) {
+                if (file.size > 20 * 1024 * 1024) return alert('Video is too large! Limit is 20MB.');
+                socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text: '', uploadedImage: fileData, isVideo: true, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
                 imageUpload.value = '';
-            };
-        }; reader.readAsDataURL(this.files[0]);
+            } 
+            // Handle GIFs separately so we don't accidentally resize/freeze them
+            else if (file.type === 'image/gif') {
+                socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text: '', uploadedImage: fileData, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
+                imageUpload.value = '';
+            } 
+            // Handle regular images
+            else {
+                const img = new Image(); img.src = fileData;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas'); let w = img.width, h = img.height;
+                    if(w > 600) { h *= 600/w; w = 600; } canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, text: '', uploadedImage: canvas.toDataURL('image/jpeg', 0.8), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
+                    imageUpload.value = '';
+                };
+            }
+        }; 
+        reader.readAsDataURL(file);
     }
 });
 
 let pressTimer;
 messages.addEventListener('touchstart', (e) => {
-    if (e.target.classList.contains('chat-image') || e.target.classList.contains('avatar-small')) return;
+    if (e.target.classList.contains('chat-image') || e.target.classList.contains('avatar-small') || e.target.classList.contains('chat-video')) return;
     const li = e.target.closest('li.my-message, li.other-message');
     if (!li) return;
     pressTimer = setTimeout(() => {
@@ -369,15 +394,14 @@ socket.on('pinned updated', (pinnedMsg) => {
     } else { pinnedBanner.classList.add('hidden'); }
 });
 
-// 🌟 NEW: Listen for messages AND trigger Native Notifications!
 socket.on('chat message', (data) => {
     displayMessage(data, false);
     
-    // NATIVE PHONE NOTIFICATION (If app is hidden/minimized)
+    // NATIVE PHONE NOTIFICATION 
     if (data.user !== currentUser.name && document.hidden) {
         if ("Notification" in window && Notification.permission === "granted") {
             const notif = new Notification(data.user + " in " + currentRoomName.textContent, {
-                body: data.text || "📸 Sent an image",
+                body: data.text || (data.isVideo ? "🎥 Sent a video" : "📸 Sent an image"),
                 icon: data.avatar,
                 badge: data.avatar,
                 vibrate: [200, 100, 200]
@@ -385,6 +409,19 @@ socket.on('chat message', (data) => {
             notif.onclick = () => { window.focus(); notif.close(); };
         }
     }
+    
+    // 🌟 BLUE TICKS: Mark as read immediately if we are looking at the screen
+    if (!document.hidden && activeRoomId && data.user !== currentUser.name) {
+        socket.emit('mark read');
+    }
+});
+
+// 🌟 BLUE TICKS: Magically turn them blue!
+socket.on('messages read', () => {
+    document.querySelectorAll('.ticks.delivered').forEach(el => {
+        el.classList.remove('delivered');
+        el.classList.add('read');
+    });
 });
 
 socket.on('update likes', (data) => { const l = document.getElementById(`like-count-${data.id}`); if(l) l.textContent = data.likes > 0 ? data.likes : ''; });
@@ -409,11 +446,25 @@ function displayMessage(data, isHistory) {
 
     let contentText = escapeHTML(data.text);
     if(data.isEdited) contentText += `<span class="edited-tag">(edited)</span>`;
-    let content = data.uploadedImage ? `<img src="${data.uploadedImage}" class="chat-image">` : `<span class="message-text">${contentText}</span>`;
+    
+    // 🌟 VIDEO SUPPORT: Render an MP4 player if it's a video, otherwise standard image/text
+    let content = '';
+    if (data.uploadedImage) {
+        if (data.isVideo) {
+            content = `<video src="${data.uploadedImage}" class="chat-video" controls playsinline></video>`;
+        } else {
+            content = `<img src="${data.uploadedImage}" class="chat-image">`;
+        }
+    } else {
+        content = `<span class="message-text">${contentText}</span>`;
+    }
     
     let replyHTML = ''; 
     if (data.replyTo) { replyHTML = `<div class="replied-to"><div class="replied-to-user">${escapeHTML(data.replyTo.user)}</div><div class="replied-to-text">${escapeHTML(data.replyTo.text).substring(0, 60)}</div></div>`; }
-    let ticks = isMe ? `<span class="ticks delivered">✔✔</span>` : '';
+    
+    // 🌟 BLUE TICKS: Render the correct color based on DB status
+    let tickClass = data.status === 'read' ? 'read' : 'delivered';
+    let ticks = isMe ? `<span class="ticks ${tickClass}">✔✔</span>` : '';
     let ghostIcon = data.isGhost ? '⏱️ ' : '';
 
     li.innerHTML = `
@@ -438,7 +489,6 @@ document.getElementById('messages').addEventListener('click', (e) => {
     if(e.target.classList.contains('chat-image')) { document.getElementById('lightbox-img').src = e.target.src; document.getElementById('lightbox').classList.remove('hidden'); } 
     if(e.target.classList.contains('avatar-small')) {
         const friendName = e.target.dataset.name;
-        // 🌟 NEW: Don't pull a user profile for the bot!
         if (friendName === '🤖 Bot') return;
         socket.emit('get user info', friendName);
     }
