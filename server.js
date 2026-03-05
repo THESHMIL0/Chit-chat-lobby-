@@ -18,8 +18,14 @@ db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY, avatar TEXT, about TEXT, isOnline INTEGER, lastSeen INTEGER)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_history_roomId_time ON history(roomId, timestamp)`);
     
+    // Create Default Lobby
     db.get(`SELECT id FROM rooms WHERE id = 'lobby'`, (err, row) => {
         if (!row) db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES ('lobby', 'Lobby 😸', '', 0, '')`);
+    });
+
+    // 🌟 NEW: Create the permanent AI Lounge room!
+    db.get(`SELECT id FROM rooms WHERE id = 'ai_lounge'`, (err, row) => {
+        if (!row) db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES ('ai_lounge', '🤖 AI Lounge', 'https://api.dicebear.com/7.x/bottts/svg?seed=ChitChatBot&backgroundColor=00a884', 0, '')`);
     });
 });
 
@@ -33,6 +39,36 @@ function broadcastRooms(targetSocket = io) {
     db.all(`SELECT id, name, logo, isPrivate FROM rooms`, (err, rows) => {
         if (rows) targetSocket.emit('room list', rows);
     });
+}
+
+// 🌟 NEW: The AI Brain Function
+async function askSmartBot(prompt) {
+    // 👇 BOSS, PUT YOUR FREE GEMINI API KEY IN THESE QUOTES! 👇
+    const apiKey = 'YOUR_GEMINI_API_KEY'; 
+
+    if (apiKey === 'YOUR_GEMINI_API_KEY') {
+        const fallbacks = [
+            "I am super smart, but my boss needs to give me an API Key first! 😸",
+            "Beep boop! 🤖 Tell the admin to put a Gemini API key in my brain!",
+            "I would tell you the meaning of life, but I am locked without my API key! 🔐"
+        ];
+        return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+    }
+
+    try {
+        // We tell the AI to act like a chat buddy
+        const finalPrompt = prompt + " (Keep your response conversational, under 3 sentences, and use emojis. Act like a helpful chat friend.)";
+        
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: finalPrompt }] }] })
+        });
+        const data = await res.json();
+        return data.candidates[0].content.parts[0].text;
+    } catch (e) {
+        return "My brain is a little fuzzy right now... try asking again! 😵‍💫";
+    }
 }
 
 io.on('connection', (socket) => {
@@ -123,19 +159,23 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('chat message', data);
         socket.broadcast.emit('global room alert', roomId);
 
-        // 🌟 NEW: THE CHAT BOT LOGIC!
-        if (data.text && data.text.toLowerCase().startsWith('@bot')) {
-            setTimeout(() => {
-                const text = data.text.toLowerCase();
-                let botReply = "Beep boop! 🤖 I am the Chit Chat Bot. Ask me for a 'joke', 'flip a coin', or to say 'hello'!";
+        // 🌟 NEW: THE INTELLIGENT CHAT BOT LOGIC
+        const isBotMentioned = data.text && data.text.toLowerCase().includes('@bot');
+        const isAiLounge = roomId === 'ai_lounge';
+
+        // Don't let the bot reply to itself!
+        if (data.user !== '🤖 Bot' && (isBotMentioned || isAiLounge)) {
+            
+            // Show everyone the bot is "typing..."
+            socket.to(roomId).emit('user typing', { name: '🤖 Bot', isTyping: true });
+            
+            setTimeout(async () => {
+                // Clean the prompt
+                let prompt = data.text.replace(/@bot/gi, '').trim();
+                if (!prompt) prompt = "Say hello to everyone!";
                 
-                if (text.includes('joke')) {
-                    botReply = "Why do programmers prefer dark mode? Because light attracts bugs! 🐛😸";
-                } else if (text.includes('coin')) {
-                    botReply = Math.random() > 0.5 ? "I flipped a coin: It landed on Heads! 🪙" : "I flipped a coin: It landed on Tails! 🪙";
-                } else if (text.includes('hello') || text.includes('hi')) {
-                    botReply = `Hello there, ${data.user}! Hope you are having a wonderful day! ✨`;
-                }
+                // Get the intelligent reply
+                let botReply = await askSmartBot(prompt);
 
                 const botMsg = {
                     id: Date.now().toString() + 'bot', user: '🤖 Bot',
@@ -145,10 +185,13 @@ io.on('connection', (socket) => {
                     isGhost: false
                 };
 
+                // Stop typing and send message
+                io.to(roomId).emit('user typing', { name: '🤖 Bot', isTyping: false });
+                
                 db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [botMsg.id, roomId, Date.now(), JSON.stringify(botMsg)]);
                 io.to(roomId).emit('chat message', botMsg);
                 socket.broadcast.emit('global room alert', roomId);
-            }, 1200); // 1.2 second delay so it feels natural!
+            }, 1500); // 1.5 second delay so it feels natural!
         }
     });
 
