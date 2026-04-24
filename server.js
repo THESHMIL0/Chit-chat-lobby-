@@ -6,7 +6,15 @@ const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 1e8 }); 
+
+// 🚨 THE MAGIC FIX: We kept your large file support, and added CORS to allow the Android phone! 🚨
+const io = new Server(server, { 
+    maxHttpBufferSize: 1e8,
+    cors: {
+        origin: "*", // Allows your phone app to connect to this server
+        methods: ["GET", "POST"]
+    }
+}); 
 
 app.use(express.static(path.join(__dirname, 'public')));
 
