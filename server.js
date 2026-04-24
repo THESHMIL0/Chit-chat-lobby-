@@ -7,11 +7,10 @@ const sqlite3 = require('sqlite3').verbose();
 const app = express();
 const server = http.createServer(app);
 
-// 🚨 THE MAGIC FIX: We kept your large file support, and added CORS to allow the Android phone! 🚨
 const io = new Server(server, { 
     maxHttpBufferSize: 1e8,
     cors: {
-        origin: "*", // Allows your phone app to connect to this server
+        origin: "*", 
         methods: ["GET", "POST"]
     }
 }); 
@@ -47,7 +46,6 @@ function broadcastRooms(targetSocket = io) {
     });
 }
 
-// 🌟 NEW: Link Scraper Engine (Grabs titles and images from URLs)
 async function fetchLinkPreview(url) {
     try {
         const controller = new AbortController();
@@ -61,18 +59,17 @@ async function fetchLinkPreview(url) {
         const imgMatch = text.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i);
 
         if (titleMatch) return { title: titleMatch[1].trim(), desc: descMatch ? descMatch[1].trim() : '', img: imgMatch ? imgMatch[1].trim() : '', url: url };
-    } catch (e) { /* Ignore fetch errors */ }
+    } catch (e) { }
     return null;
 }
 
-// 🤖 The Super-Brain AI Bot
 async function askSmartBot(prompt) {
     const apiKey = process.env.GEMINI_API_KEY; 
     if (!apiKey) return "My boss forgot to put my API key in Render's Environment Variables! 😿";
 
     try {
         const finalPrompt = prompt + " (Keep your response conversational, under 3 sentences, and use emojis. Act like a helpful chat friend.)";
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -179,10 +176,11 @@ io.on('connection', (socket) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return; 
         data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
-        data.type = 'chat'; data.likes = 0; data.status = 'delivered'; 
+        
+        // 🌟 NEW: Set up Reactions instead of Likes
+        data.type = 'chat'; data.reactions = {}; data.status = 'delivered'; 
         data.roomId = roomId;
         
-        // 🌟 NEW: Link Scraper Trigger
         if (data.text) {
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             const urls = data.text.match(urlRegex);
@@ -214,7 +212,7 @@ io.on('connection', (socket) => {
                 const botMsg = {
                     id: Date.now().toString() + 'bot', user: '🤖 Bot', roomId: roomId,
                     avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=ChitChatBot&backgroundColor=00a884',
-                    text: botReply, type: 'chat', likes: 0, status: 'delivered', color: '#00a884',
+                    text: botReply, type: 'chat', reactions: {}, status: 'delivered', color: '#00a884',
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: false
                 };
 
@@ -226,7 +224,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 🌟 NEW: Poll Engine
     socket.on('vote poll', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         const voterName = activeUsersById[socket.id]?.name;
@@ -236,12 +233,10 @@ io.on('connection', (socket) => {
             if (row) {
                 const msg = JSON.parse(row.data);
                 if (msg.poll) {
-                    // Remove old vote
                     msg.poll.options.forEach(opt => {
                         const index = opt.votes.indexOf(voterName);
                         if (index > -1) opt.votes.splice(index, 1);
                     });
-                    // Add new vote
                     msg.poll.options[data.optionIndex].votes.push(voterName);
                     
                     db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), data.msgId]);
@@ -290,14 +285,18 @@ io.on('connection', (socket) => {
         if(roomId) socket.to(roomId).emit('user typing', { name: activeUsersById[socket.id].name, isTyping });
     });
 
-    socket.on('like message', (msgId) => {
+    // 🌟 NEW: Handle Dynamic Reactions
+    socket.on('react message', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return;
-        db.get("SELECT data FROM history WHERE id = ?", [msgId], (err, row) => {
+        db.get("SELECT data FROM history WHERE id = ?", [data.msgId], (err, row) => {
             if (row) {
-                const msg = JSON.parse(row.data); msg.likes += 1;
-                db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), msgId]);
-                io.to(roomId).emit('update likes', { id: msgId, likes: msg.likes });
+                const msg = JSON.parse(row.data); 
+                msg.reactions = msg.reactions || {};
+                msg.reactions[data.emoji] = (msg.reactions[data.emoji] || 0) + 1;
+                
+                db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), data.msgId]);
+                io.to(roomId).emit('update reactions', { id: data.msgId, reactions: msg.reactions });
             }
         });
     });
