@@ -1,8 +1,17 @@
-const socket = io();
+// Connects directly to your live server!
+const socket = io('https://chit-chat-lobby.onrender.com');
 
-// 🌟 ALWAYS sanitize text to prevent hackers!
+// 🌟 THE BRAND NEW HAPTIC ENGINE!
+function hapticFeedback(type = 'light') {
+    if (!navigator.vibrate) return;
+    if (type === 'light') navigator.vibrate(30); 
+    else if (type === 'medium') navigator.vibrate(50); 
+    else if (type === 'heavy') navigator.vibrate([40, 60, 40]); 
+}
+
 function escapeHTML(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
 
+const loadingScreen = document.getElementById('loading-screen');
 const loginScreen = document.getElementById('login-screen');
 const roomListScreen = document.getElementById('room-list-screen');
 const chatScreen = document.getElementById('chat-screen');
@@ -24,7 +33,6 @@ const imageUpload = document.getElementById('image-upload');
 const replyPreviewContainer = document.getElementById('reply-preview-container');
 const ghostBtn = document.getElementById('ghost-btn'); 
 
-// 🌟 POLL ELEMENTS
 const pollBtn = document.getElementById('poll-btn');
 const createPollModal = document.getElementById('create-poll-modal');
 const addPollOptBtn = document.getElementById('add-poll-opt-btn');
@@ -42,6 +50,7 @@ const passwordModal = document.getElementById('password-modal');
 const msgOptionsModal = document.getElementById('message-options-modal');
 const viewProfileModal = document.getElementById('view-profile-modal');
 const groupInfoModal = document.getElementById('group-info-modal');
+const appSettingsModal = document.getElementById('app-settings-modal'); 
 const headerClickArea = document.getElementById('header-click-area');
 const infoRoomLogo = document.getElementById('info-room-logo');
 const infoRoomName = document.getElementById('info-room-name');
@@ -66,23 +75,53 @@ let typingTimeout;
 let currentlyTyping = new Set();
 let baseOnlineText = "Tap to change info";
 
-if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-    Notification.requestPermission();
-}
-
 function closeLightbox() { lightbox.classList.add('hidden'); lightboxImg.src = ''; }
 lightbox.addEventListener('click', closeLightbox);
 lightbox.addEventListener('touchstart', closeLightbox, { passive: true });
 
+function saveUserLocally() {
+    localStorage.setItem('chitchat_user', JSON.stringify(currentUser));
+}
+
+if (window.Capacitor && Capacitor.Plugins.LocalNotifications) {
+    Capacitor.Plugins.LocalNotifications.requestPermissions();
+} else if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+    Notification.requestPermission();
+}
+
+history.replaceState({screen: 'exit'}, '', '#exit');
+const savedUser = localStorage.getItem('chitchat_user');
+if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    
+    usernameInput.value = currentUser.name;
+    if(currentUser.avatar) {
+        avatarPreview.src = currentUser.avatar;
+        settingsAvatarPreview.src = currentUser.avatar;
+    }
+    settingsUsername.value = currentUser.name;
+    settingsAbout.value = currentUser.about;
+    settingsBubbleColor.value = currentUser.color;
+} else {
+    loadingScreen.classList.add('hidden');
+    history.pushState({screen: 'login'}, '', '#login');
+}
+
 profilePicUpload.addEventListener('change', function() {
     if (this.files[0]) {
         const reader = new FileReader();
-        reader.onload = (e) => { currentUser.avatar = e.target.result; avatarPreview.src = e.target.result; settingsAvatarPreview.src = e.target.result; };
+        reader.onload = (e) => { 
+            currentUser.avatar = e.target.result; 
+            avatarPreview.src = e.target.result; 
+            settingsAvatarPreview.src = e.target.result; 
+            saveUserLocally(); 
+        };
         reader.readAsDataURL(this.files[0]);
     }
 });
 
 document.getElementById('login-btn').addEventListener('click', () => {
+    hapticFeedback('light'); 
     currentUser.name = usernameInput.value.trim();
     if (!currentUser.name) return alert('Enter a name');
     if (!currentUser.avatar) {
@@ -93,31 +132,60 @@ document.getElementById('login-btn').addEventListener('click', () => {
     loginScreen.classList.add('hidden');
     roomListScreen.classList.remove('hidden');
     
-    if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+    saveUserLocally(); 
+    history.replaceState({screen: 'lobby'}, '', '#lobby'); 
+    
+    socket.emit('update profile', currentUser);
 });
 
-// 🌟 FIX: ANDROID BACK BUTTON SUPPORT (HISTORY API)
 document.getElementById('settings-btn').onclick = () => { 
+    hapticFeedback('light');
+    appSettingsModal.classList.remove('hidden');
+};
+
+document.getElementById('btn-open-profile').onclick = () => {
+    appSettingsModal.classList.add('hidden');
     history.pushState({screen: 'profile'}, '', '#profile');
     roomListScreen.classList.add('hidden'); 
     profileScreen.classList.remove('hidden'); 
+};
+
+document.getElementById('btn-logout').onclick = () => {
+    if(confirm("Are you sure you want to completely reset the app and log out? 😿")) {
+        localStorage.clear(); 
+        window.location.reload(); 
+    }
 };
 
 document.getElementById('close-profile-btn').onclick = () => { history.back(); };
 document.getElementById('back-btn').onclick = (e) => { e.stopPropagation(); history.back(); };
 
 window.addEventListener('popstate', (e) => {
-    if (activeRoomId) {
-        chatScreen.classList.add('hidden');
-        roomListScreen.classList.remove('hidden');
-        socket.emit('leave room');
-        activeRoomId = null;
-        isGhostMode = false;
-        ghostBtn.classList.remove('active');
-        currentlyTyping.clear();
-    } else if (!profileScreen.classList.contains('hidden')) {
-        profileScreen.classList.add('hidden');
-        roomListScreen.classList.remove('hidden');
+    const state = e.state ? e.state.screen : '';
+
+    if (state === 'lobby') {
+        if (activeRoomId) {
+            chatScreen.classList.add('hidden');
+            roomListScreen.classList.remove('hidden');
+            socket.emit('leave room');
+            activeRoomId = null;
+            isGhostMode = false;
+            ghostBtn.classList.remove('active');
+            currentlyTyping.clear();
+        } else if (!profileScreen.classList.contains('hidden')) {
+            profileScreen.classList.add('hidden');
+            roomListScreen.classList.remove('hidden');
+        }
+    } else if (state === 'exit') {
+        if (!roomListScreen.classList.contains('hidden')) {
+            if (confirm("Are you sure you want to exit Chit Chat? 😿")) {
+                history.back(); 
+            } else {
+                history.pushState({screen: 'lobby'}, '', '#lobby'); 
+            }
+        } else {
+            history.back(); 
+        }
     }
 });
 
@@ -126,7 +194,9 @@ document.getElementById('save-profile-btn').onclick = () => {
     if(settingsAbout.value.trim()) currentUser.about = settingsAbout.value.trim();
     currentUser.color = settingsBubbleColor.value; 
     socket.emit('update profile', currentUser);
-    history.back(); // Use native back to close profile safely!
+    
+    saveUserLocally(); 
+    history.back(); 
 };
 
 function renderRoomList() {
@@ -157,7 +227,7 @@ socket.on('global room alert', (roomId) => {
     if (activeRoomId !== roomId) { unreadCounts[roomId] = (unreadCounts[roomId] || 0) + 1; renderRoomList(); }
 });
 
-document.getElementById('show-create-room-btn').onclick = () => createRoomModal.classList.remove('hidden');
+document.getElementById('show-create-room-btn').onclick = () => { hapticFeedback('light'); createRoomModal.classList.remove('hidden'); }
 document.getElementById('new-room-private').onchange = (e) => document.getElementById('password-input-container').classList.toggle('hidden', !e.target.checked);
 
 document.getElementById('create-room-submit').onclick = () => {
@@ -169,6 +239,7 @@ document.getElementById('create-room-submit').onclick = () => {
 
 let pendingJoinRoom = null;
 function joinRoomPrompt(room) {
+    hapticFeedback('light'); 
     if(room.isPrivate) {
         pendingJoinRoom = room; document.getElementById('join-room-pass').value = ''; passwordModal.classList.remove('hidden');
     } else { currentRoomPassword = ''; joinRoom(room.id, '', false); }
@@ -178,19 +249,34 @@ document.getElementById('join-room-submit').onclick = () => {
 };
 
 function joinRoom(roomId, password, isReconnect) { socket.emit('join room', { roomId, password, user: currentUser, isReconnect }); }
-socket.on('connect', () => { if (currentUser.name && activeRoomId) joinRoom(activeRoomId, currentRoomPassword, true); });
+
+socket.on('connect', () => { 
+    loadingScreen.classList.add('hidden');
+    
+    if (currentUser.name) {
+        socket.emit('update profile', currentUser);
+        loginScreen.classList.add('hidden');
+        roomListScreen.classList.remove('hidden');
+    }
+    
+    if (currentUser.name && activeRoomId) joinRoom(activeRoomId, currentRoomPassword, true); 
+});
+
 socket.on('join error', (msg) => alert(msg));
 socket.on('chat history', (data) => {
-    // 🌟 FIX: ANDROID BACK BUTTON SUPPORT (HISTORY API)
     history.pushState({screen: 'chat', roomId: data.room.id}, '', '#chat');
     
     roomListScreen.classList.add('hidden'); chatScreen.classList.remove('hidden');
+    
     activeRoomId = data.room.id; unreadCounts[activeRoomId] = 0; renderRoomList();
+    
+    sendMicBtn.innerHTML = (activeRoomId === 'ai_lounge') ? '➤' : '🎤';
+    
     updateGroupHeader(data.room);
     
     const savedWallpaper = localStorage.getItem('wallpaper_' + activeRoomId);
     if (savedWallpaper) chatScreen.style.backgroundImage = `url(${savedWallpaper})`;
-    else chatScreen.style.backgroundImage = `url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')`;
+    else { chatScreen.style.backgroundImage = ''; }
 
     messages.innerHTML = '';
     data.history.forEach(msg => displayMessage(msg, true));
@@ -199,9 +285,7 @@ socket.on('chat history', (data) => {
 });
 
 document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && activeRoomId) {
-        socket.emit('mark read');
-    }
+    if (!document.hidden && activeRoomId) { socket.emit('mark read'); }
 });
 
 function updateHeaderSubtitle() {
@@ -226,8 +310,7 @@ socket.on('user typing', (data) => {
     updateHeaderSubtitle();
 });
 
-// Modals closing logic
-[createRoomModal, passwordModal, msgOptionsModal, viewProfileModal, groupInfoModal, createPollModal].forEach(modal => {
+[createRoomModal, passwordModal, msgOptionsModal, viewProfileModal, groupInfoModal, createPollModal, appSettingsModal].forEach(modal => {
     modal.addEventListener('click', (e) => { if(e.target === modal) modal.classList.add('hidden'); });
 });
 
@@ -238,6 +321,7 @@ function updateGroupHeader(room) {
 socket.on('group info updated', updateGroupHeader);
 
 headerClickArea.onclick = () => {
+    hapticFeedback('light');
     infoRoomLogo.src = currentRoomLogo.src;
     infoRoomName.value = currentRoomName.textContent;
     groupInfoModal.classList.remove('hidden');
@@ -262,7 +346,6 @@ groupPicUpload.addEventListener('change', function() {
     }
 });
 
-// Custom Wallpaper Logic
 document.getElementById('btn-change-wallpaper').onclick = () => wallpaperUpload.click();
 wallpaperUpload.addEventListener('change', function() {
     if (this.files[0]) {
@@ -278,11 +361,10 @@ wallpaperUpload.addEventListener('change', function() {
 
 document.getElementById('btn-reset-wallpaper').onclick = () => {
     localStorage.removeItem('wallpaper_' + activeRoomId);
-    chatScreen.style.backgroundImage = `url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')`;
+    chatScreen.style.backgroundImage = ''; 
     groupInfoModal.classList.add('hidden');
 };
 
-// Search Chat Logic
 document.getElementById('btn-open-search').onclick = () => {
     groupInfoModal.classList.add('hidden');
     chatSearchContainer.classList.remove('hidden');
@@ -323,10 +405,13 @@ chatSearchInput.addEventListener('input', (e) => {
     });
 });
 
-ghostBtn.onclick = () => { isGhostMode = !isGhostMode; ghostBtn.classList.toggle('active', isGhostMode); };
+ghostBtn.onclick = () => { 
+    hapticFeedback('medium'); 
+    isGhostMode = !isGhostMode; 
+    ghostBtn.classList.toggle('active', isGhostMode); 
+};
 
-// 🌟 NEW: Poll Creation Logic
-pollBtn.onclick = () => createPollModal.classList.remove('hidden');
+pollBtn.onclick = () => { hapticFeedback('light'); createPollModal.classList.remove('hidden'); };
 addPollOptBtn.onclick = () => {
     const input = document.createElement('input');
     input.type = 'text'; input.className = 'premium-input poll-opt-input'; input.placeholder = 'Another Option'; input.style.marginBottom = '0';
@@ -337,6 +422,7 @@ sendPollBtn.onclick = () => {
     const q = pollQuestion.value.trim();
     const opts = Array.from(document.querySelectorAll('.poll-opt-input')).map(i => i.value.trim()).filter(v => v);
     if(q && opts.length >= 2) {
+        hapticFeedback('heavy'); 
         const pollData = { question: q, options: opts.map(o => ({ text: o, votes: [] })) };
         socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, color: currentUser.color, text: '', poll: pollData, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: isGhostMode });
         createPollModal.classList.add('hidden');
@@ -346,7 +432,14 @@ sendPollBtn.onclick = () => {
 };
 
 input.addEventListener('input', () => { 
-    if(editingMsgId) sendMicBtn.innerHTML = '✔'; else sendMicBtn.innerHTML = input.value.trim() ? '➤' : '🎤'; 
+    if (editingMsgId) {
+        sendMicBtn.innerHTML = '✔'; 
+    } else if (input.value.trim() || activeRoomId === 'ai_lounge') {
+        sendMicBtn.innerHTML = '➤'; 
+    } else {
+        sendMicBtn.innerHTML = '🎤';
+    }
+    
     socket.emit('typing', true);
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => socket.emit('typing', false), 1500); 
@@ -355,19 +448,23 @@ input.addEventListener('input', () => {
 function sendMessage() {
     const text = input.value.trim();
     if (text) {
+        hapticFeedback('heavy'); 
         socket.emit('typing', false); 
         if (editingMsgId) { socket.emit('edit message', { msgId: editingMsgId, newText: text }); editingMsgId = null;
         } else { socket.emit('chat message', { user: currentUser.name, avatar: currentUser.avatar, about: currentUser.about, color: currentUser.color, text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), replyTo: replyingTo, isGhost: isGhostMode }); }
-        input.value = ''; sendMicBtn.innerHTML = '🎤'; replyingTo = null; replyPreviewContainer.classList.add('hidden');
+        
+        input.value = ''; 
+        sendMicBtn.innerHTML = (activeRoomId === 'ai_lounge') ? '➤' : '🎤'; 
+        replyingTo = null; replyPreviewContainer.classList.add('hidden');
     }
 }
 
 input.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
 
-// Video & Image Engine
-attachBtn.onclick = () => imageUpload.click();
+attachBtn.onclick = () => { hapticFeedback('light'); imageUpload.click(); };
 imageUpload.addEventListener('change', function() {
     if (this.files[0]) {
+        hapticFeedback('heavy'); 
         const file = this.files[0];
         const reader = new FileReader(); 
         reader.onload = (e) => {
@@ -393,12 +490,14 @@ imageUpload.addEventListener('change', function() {
         reader.readAsDataURL(file);
     }
 });
+
 let pressTimer;
 messages.addEventListener('touchstart', (e) => {
-    if (e.target.closest('.poll-card') || e.target.classList.contains('chat-image') || e.target.classList.contains('chat-video') || e.target.classList.contains('chat-audio') || e.target.classList.contains('avatar-small')) return;
+    if (e.target.closest('.poll-card') || e.target.closest('.custom-audio-player') || e.target.closest('.ttt-cell') || e.target.classList.contains('chat-image') || e.target.classList.contains('chat-video') || e.target.classList.contains('avatar-small')) return;
     const li = e.target.closest('li.my-message, li.other-message');
     if (!li) return;
     pressTimer = setTimeout(() => {
+        hapticFeedback('medium'); 
         selectedMsgId = li.id.replace('msg-', '');
         if (li.classList.contains('my-message') && li.querySelector('.message-text')) document.getElementById('opt-edit').classList.remove('hidden');
         else document.getElementById('opt-edit').classList.add('hidden');
@@ -408,13 +507,12 @@ messages.addEventListener('touchstart', (e) => {
 messages.addEventListener('touchend', () => clearTimeout(pressTimer));
 messages.addEventListener('touchmove', () => clearTimeout(pressTimer));
 
-// 🌟 Swipe to Reply Gesture Engine
 let touchStartX = 0;
 let touchCurrentX = 0;
 let swipedElement = null;
 
 messages.addEventListener('touchstart', (e) => {
-    if (e.target.closest('.poll-card') || e.target.classList.contains('chat-image') || e.target.classList.contains('chat-video') || e.target.classList.contains('chat-audio')) return;
+    if (e.target.closest('.poll-card') || e.target.closest('.custom-audio-player') || e.target.closest('.ttt-cell') || e.target.classList.contains('chat-image') || e.target.classList.contains('chat-video')) return;
     const li = e.target.closest('li.my-message, li.other-message');
     if (!li) return;
     touchStartX = e.touches[0].clientX;
@@ -436,18 +534,26 @@ messages.addEventListener('touchend', () => {
     swipedElement.style.transform = `translateX(0px)`;
     
     if (diffX > 50) { 
-        if (navigator.vibrate) navigator.vibrate(50);
+        hapticFeedback('medium'); 
         const li = swipedElement;
         selectedMsgId = li.id.replace('msg-', '');
-        replyingTo = { user: li.dataset.sender, text: li.querySelector('.message-text')?.innerText || (li.querySelector('.poll-question') ? '📊 Poll' : (li.querySelector('.chat-audio') ? '🎤 Voice Note' : 'Attachment')) };
-        document.getElementById('reply-preview-text').innerHTML = `<b style="color: #00a884; font-size: 13px;">${escapeHTML(replyingTo.user)}</b><br><span style="color: #54656f; font-size: 13px;">${escapeHTML(replyingTo.text).substring(0,40)}...</span>`;
+        replyingTo = { user: li.dataset.sender, text: li.querySelector('.message-text')?.innerText || (li.querySelector('.poll-question') ? '📊 Poll' : (li.querySelector('.custom-audio-player') ? '🎤 Voice Note' : 'Attachment')) };
+        document.getElementById('reply-preview-text').innerHTML = `<b style="color: var(--accent); font-size: 13px;">${escapeHTML(replyingTo.user)}</b><br><span style="color: var(--text-secondary); font-size: 13px;">${escapeHTML(replyingTo.text).substring(0,40)}...</span>`;
         replyPreviewContainer.classList.remove('hidden'); input.focus();
     }
     swipedElement = null; touchStartX = 0; touchCurrentX = 0;
 });
 
+document.querySelectorAll('.react-btn').forEach(btn => {
+    btn.onclick = (e) => {
+        hapticFeedback('light'); 
+        const emoji = e.target.innerText;
+        socket.emit('react message', { msgId: selectedMsgId, emoji });
+        msgOptionsModal.classList.add('hidden');
+    };
+});
+
 document.getElementById('opt-delete').onclick = () => { socket.emit('delete message', selectedMsgId); msgOptionsModal.classList.add('hidden'); };
-document.getElementById('opt-like').onclick = () => { socket.emit('like message', selectedMsgId); msgOptionsModal.classList.add('hidden'); };
 document.getElementById('opt-pin').onclick = () => { 
     const li = document.getElementById(`msg-${selectedMsgId}`); socket.emit('pin message', { msg: { user: li.dataset.sender, text: li.querySelector('.message-text')?.innerText || 'Attachment' }}); msgOptionsModal.classList.add('hidden'); 
 };
@@ -458,7 +564,7 @@ document.getElementById('opt-edit').onclick = () => {
 };
 document.getElementById('opt-reply').onclick = () => {
     const li = document.getElementById(`msg-${selectedMsgId}`); replyingTo = { user: li.dataset.sender, text: li.querySelector('.message-text')?.innerText || 'Attachment' };
-    document.getElementById('reply-preview-text').innerHTML = `<b style="color: #00a884; font-size: 13px;">${escapeHTML(replyingTo.user)}</b><br><span style="color: #54656f; font-size: 13px;">${escapeHTML(replyingTo.text).substring(0,40)}...</span>`;
+    document.getElementById('reply-preview-text').innerHTML = `<b style="color: var(--accent); font-size: 13px;">${escapeHTML(replyingTo.user)}</b><br><span style="color: var(--text-secondary); font-size: 13px;">${escapeHTML(replyingTo.text).substring(0,40)}...</span>`;
     replyPreviewContainer.classList.remove('hidden'); input.focus(); msgOptionsModal.classList.add('hidden');
 };
 document.getElementById('cancel-reply-btn').onclick = () => { replyingTo = null; replyPreviewContainer.classList.add('hidden'); }
@@ -475,14 +581,24 @@ socket.on('chat message', (data) => {
     displayMessage(data, false);
     
     if (data.user !== currentUser.name && document.hidden) {
-        if ("Notification" in window && Notification.permission === "granted") {
-            const notif = new Notification(data.user + " in " + currentRoomName.textContent, {
-                body: data.text || (data.isAudio ? "🎤 Sent a voice note" : (data.isVideo ? "🎥 Sent a video" : (data.poll ? "📊 Sent a poll" : "📸 Sent an image"))),
+        if (window.Capacitor && Capacitor.Plugins.LocalNotifications) {
+            Capacitor.Plugins.LocalNotifications.schedule({
+                notifications: [{
+                    title: `${data.user} in ${currentRoomName.textContent}`,
+                    body: data.text || (data.isAudio ? "🎤 Voice Note" : "📸 Attachment"),
+                    id: Math.floor(Math.random() * 100000), 
+                    schedule: { at: new Date(Date.now() + 100) } 
+                }]
+            });
+        } else if ("Notification" in window && Notification.permission === "granted") {
+            const notif = new Notification(`${data.user} in ${currentRoomName.textContent}`, {
+                body: data.text || (data.isAudio ? "🎤 Voice Note" : "📸 Attachment"),
                 icon: data.avatar, badge: data.avatar, vibrate: [200, 100, 200]
             });
             notif.onclick = () => { window.focus(); notif.close(); };
         }
     }
+
     if (!document.hidden && activeRoomId && data.user !== currentUser.name) socket.emit('mark read');
 });
 
@@ -500,21 +616,34 @@ socket.on('messages read', () => {
     document.querySelectorAll('.ticks.delivered').forEach(el => { el.classList.remove('delivered'); el.classList.add('read'); });
 });
 
-socket.on('update likes', (data) => { const l = document.getElementById(`like-count-${data.id}`); if(l) l.textContent = data.likes > 0 ? data.likes : ''; });
-socket.on('message deleted', (id) => { const el = document.getElementById(`msg-${id}`); if(el) el.querySelector('.message-text').innerHTML = '<i style="color:#8696a0">🚫 Message deleted</i>'; });
+socket.on('update reactions', (data) => { 
+    const li = document.getElementById(`msg-${data.id}`);
+    if(li) {
+        let badge = li.querySelector('.reaction-badge');
+        let reactString = Object.entries(data.reactions).map(([emoji, count]) => `${emoji} ${count}`).join(' ');
+        
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.className = 'reaction-badge';
+            badge.id = `reaction-count-${data.id}`;
+            li.appendChild(badge);
+        }
+        badge.innerHTML = reactString;
+    } 
+});
+
+socket.on('message deleted', (id) => { const el = document.getElementById(`msg-${id}`); if(el) el.querySelector('.message-text').innerHTML = '<i style="color:var(--text-secondary)">🚫 Message deleted</i>'; });
 
 socket.on('message edited', (data) => {
     const el = document.getElementById(`msg-${data.id}`);
     if (el) { const textNode = el.querySelector('.message-text'); textNode.innerHTML = escapeHTML(data.newText) + `<span class="edited-tag">(edited)</span>`; }
 });
 
-// 🌟 HTML Generator for Messages (Updated for Polls & Audio!)
 function getMessageInnerHTML(data, isMe, isStacked) {
     let contentText = escapeHTML(data.text);
     if(data.isEdited) contentText += `<span class="edited-tag">(edited)</span>`;
     
     let content = '';
-    // 1. Check for Polls
     if (data.poll) {
         let totalVotes = data.poll.options.reduce((sum, opt) => sum + opt.votes.length, 0);
         let pollOptsHTML = data.poll.options.map((opt, idx) => {
@@ -527,13 +656,36 @@ function getMessageInnerHTML(data, isMe, isStacked) {
         }).join('');
         content = `<div class="poll-card"><div class="poll-question">📊 ${escapeHTML(data.poll.question)}</div>${pollOptsHTML}</div>`;
     } 
-    // 2. Check for Audio/Images/Videos
+    else if (data.type === 'game' && data.gameType === 'tictactoe') {
+        let statusText = '';
+        if (data.winner === 'Draw') statusText = "🤝 It's a Draw!";
+        else if (data.winner) statusText = `🎉 ${data.winner} Wins!`;
+        else statusText = `Turn: ${data.turn === 'X' ? data.players.X : (data.players.O || 'Waiting for P2...')}`;
+
+        let boardHTML = data.board.map((cell, idx) => {
+            let colorClass = cell === 'X' ? 'x-mark' : (cell === 'O' ? 'o-mark' : '');
+            return `<button class="ttt-cell ${colorClass}" data-msgid="${data.id}" data-index="${idx}">${cell}</button>`;
+        }).join('');
+
+        content = `<div class="game-card">
+            <div class="game-status">${escapeHTML(statusText)}</div>
+            <div class="tictactoe-board">${boardHTML}</div>
+        </div>`;
+    }
     else if (data.uploadedImage) {
-        if (data.isAudio) content = `<audio src="${data.uploadedImage}" class="chat-audio" controls></audio>`;
+        if (data.isAudio) {
+            content = `
+            <div class="custom-audio-player" data-audio-src="${data.uploadedImage}">
+                <button class="play-pause-btn">▶️</button>
+                <div class="audio-waveform-container">
+                    <div class="audio-waveform"><div class="audio-progress-fill"></div></div>
+                    <span class="audio-duration">Voice Note 🎤</span>
+                </div>
+            </div>`;
+        }
         else if (data.isVideo) content = `<video src="${data.uploadedImage}" class="chat-video" controls playsinline></video>`;
         else content = `<img src="${data.uploadedImage}" class="chat-image">`;
     } 
-    // 3. Regular Text
     else {
         content = `<span class="message-text">${contentText}</span>`;
     }
@@ -551,20 +703,26 @@ function getMessageInnerHTML(data, isMe, isStacked) {
     let replyHTML = ''; 
     if (data.replyTo) { replyHTML = `<div class="replied-to"><div class="replied-to-user">${escapeHTML(data.replyTo.user)}</div><div class="replied-to-text">${escapeHTML(data.replyTo.text).substring(0, 60)}</div></div>`; }
     
+    let reactionsHTML = '';
+    if (data.reactions && Object.keys(data.reactions).length > 0) {
+        let reactString = Object.entries(data.reactions).map(([emoji, count]) => `${emoji} ${count}`).join(' ');
+        reactionsHTML = `<div class="reaction-badge" id="reaction-count-${data.id}">${reactString}</div>`;
+    }
+    
     let tickClass = data.status === 'read' ? 'read' : 'delivered';
     let ticks = isMe ? `<span class="ticks ${tickClass}">✔✔</span>` : '';
     let ghostIcon = data.isGhost ? '⏱️ ' : '';
 
     return `
         ${!isMe && !isStacked ? `<img src="${data.avatar}" class="avatar-small" data-name="${data.user}">` : ''}
-        ${!isStacked ? `<span class="sender-name" style="color:${isMe ? '#00a884' : '#ea005e'}">${isMe ? 'You' : data.user}</span>` : ''}
+        ${!isStacked ? `<span class="sender-name">${isMe ? 'You' : data.user}</span>` : ''}
         ${replyHTML}
         ${content}
         <div class="meta-row">
-            <span class="likes-badge" id="like-count-${data.id}">${data.likes > 0 ? '❤️ ' + data.likes : ''}</span>
             <span>${ghostIcon}${data.time}</span>
             ${ticks}
         </div>
+        ${reactionsHTML}
     `;
 }
 
@@ -589,10 +747,61 @@ function displayMessage(data, isHistory) {
     }
 }
 
-// 🌟 Poll Voting & Image Lightbox Logic
+let globalAudio = null;
+let globalAudioBtn = null;
+let globalAudioFill = null;
+
 document.getElementById('messages').addEventListener('click', (e) => { 
+    // 🌟 THE GAME CLICK LOGIC
+    const cellBtn = e.target.closest('.ttt-cell');
+    if (cellBtn) {
+        hapticFeedback('medium');
+        socket.emit('play move', { msgId: cellBtn.dataset.msgid, index: parseInt(cellBtn.dataset.index) });
+        return;
+    }
+
+    const playBtn = e.target.closest('.play-pause-btn');
+    if (playBtn) {
+        const playerContainer = playBtn.closest('.custom-audio-player');
+        const audioSrc = playerContainer.dataset.audioSrc;
+        const progressFill = playerContainer.querySelector('.audio-progress-fill');
+
+        if (globalAudio && globalAudio.src.includes(audioSrc)) {
+            if (globalAudio.paused) {
+                globalAudio.play();
+                playBtn.innerHTML = '⏸️';
+            } else {
+                globalAudio.pause();
+                playBtn.innerHTML = '▶️';
+            }
+        } else {
+            if (globalAudio) {
+                globalAudio.pause();
+                if(globalAudioBtn) globalAudioBtn.innerHTML = '▶️';
+            }
+            globalAudio = new Audio(audioSrc);
+            globalAudioBtn = playBtn;
+            globalAudioFill = progressFill;
+
+            globalAudio.play();
+            playBtn.innerHTML = '⏸️';
+
+            globalAudio.addEventListener('timeupdate', () => {
+                const percent = (globalAudio.currentTime / globalAudio.duration) * 100;
+                if(globalAudioFill) globalAudioFill.style.width = percent + '%';
+            });
+
+            globalAudio.addEventListener('ended', () => {
+                playBtn.innerHTML = '▶️';
+                if(globalAudioFill) globalAudioFill.style.width = '0%';
+            });
+        }
+        return; 
+    }
+
     const pollOpt = e.target.closest('.poll-option-btn');
     if (pollOpt) {
+        hapticFeedback('light'); 
         socket.emit('vote poll', { msgId: pollOpt.dataset.msgid, optionIndex: parseInt(pollOpt.dataset.optidx) });
         return;
     }
@@ -605,22 +814,51 @@ document.getElementById('messages').addEventListener('click', (e) => {
     }
 });
 
-document.getElementById('theme-toggle').onclick = () => document.body.classList.toggle('dark-mode');
+const availableThemes = ['light', 'dark', 'pink'];
+let currentThemeIndex = 0;
 
-// 🎤 THE BRAND NEW VOICE NOTE ENGINE
+const savedTheme = localStorage.getItem('chitchat_theme') || 'light';
+currentThemeIndex = availableThemes.indexOf(savedTheme);
+if(currentThemeIndex === -1) currentThemeIndex = 0;
+applyTheme(availableThemes[currentThemeIndex]);
+
+document.getElementById('btn-theme-cycle').onclick = () => {
+    hapticFeedback('light'); 
+    currentThemeIndex = (currentThemeIndex + 1) % availableThemes.length;
+    const newTheme = availableThemes[currentThemeIndex];
+    applyTheme(newTheme);
+    localStorage.setItem('chitchat_theme', newTheme);
+};
+
+function applyTheme(themeName) {
+    document.body.setAttribute('data-theme', themeName);
+    const themeIcon = document.getElementById('theme-btn-icon');
+    if(themeName === 'dark') themeIcon.innerHTML = '🌙';
+    else if(themeName === 'pink') themeIcon.innerHTML = '🌸';
+    else themeIcon.innerHTML = '☀️';
+}
+
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
+let isTouchActive = false; 
 
 async function startRecording(e) {
-    // If there is text in the box, act as a Send button instead!
-    if (input.value.trim()) { sendMessage(); return; } 
-    
-    // 🌟 Safely stop the phone from opening the "Copy" menu!
     if (e.cancelable) e.preventDefault(); 
+    if (input.value.trim()) { sendMessage(); return; } 
+    if (activeRoomId === 'ai_lounge') return;
+
+    hapticFeedback('medium'); 
+    isTouchActive = true; 
     
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        if (!isTouchActive) {
+            stream.getTracks().forEach(track => track.stop());
+            return;
+        }
+
         mediaRecorder = new MediaRecorder(stream);
         
         mediaRecorder.ondataavailable = event => {
@@ -635,42 +873,58 @@ async function startRecording(e) {
             };
             reader.readAsDataURL(audioBlob);
             audioChunks = [];
-            stream.getTracks().forEach(track => track.stop()); // Turn off the mic
+            stream.getTracks().forEach(track => track.stop()); 
         };
         
         mediaRecorder.start();
         isRecording = true;
         
-        // 🌟 AMAZING VISUAL FEEDBACK
         sendMicBtn.classList.add('recording-pulse');
         input.placeholder = "🔴 Recording... (Release to send)";
-        input.disabled = true; // Locks the keyboard from popping up
+        input.disabled = true; 
         
     } catch(err) {
+        isTouchActive = false;
         alert("Please allow Microphone access to send Voice Notes! 🎤");
     }
 }
 
 function stopRecording() {
-    if (isRecording && mediaRecorder.state === 'recording') {
+    isTouchActive = false; 
+    
+    if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
         isRecording = false;
         
-        // 🌟 REVERT VISUAL FEEDBACK
         sendMicBtn.classList.remove('recording-pulse');
         input.placeholder = "Message";
         input.disabled = false;
+        hapticFeedback('heavy'); 
     }
 }
 
-// Mouse events (Desktop)
 sendMicBtn.addEventListener('mousedown', startRecording);
 window.addEventListener('mouseup', stopRecording);
-
-// Touch events (Mobile - Completely bulletproofed!)
 sendMicBtn.addEventListener('touchstart', startRecording, { passive: false });
 sendMicBtn.addEventListener('touchend', stopRecording);
-sendMicBtn.addEventListener('touchcancel', stopRecording); // If your thumb slides off
-
-// Hardcore block for the mobile long-press menu
+sendMicBtn.addEventListener('touchcancel', stopRecording); 
 sendMicBtn.addEventListener('contextmenu', e => e.preventDefault());
+
+// 🌟 GAME INIT LOGIC
+const gameBtn = document.getElementById('game-btn');
+if (gameBtn) {
+    gameBtn.onclick = () => {
+        hapticFeedback('heavy');
+        socket.emit('start game');
+    };
+}
+
+socket.on('game updated', (updatedMsg) => {
+    if (updatedMsg.roomId && updatedMsg.roomId !== activeRoomId) return;
+    const li = document.getElementById(`msg-${updatedMsg.id}`);
+    if (li) {
+        const isMe = updatedMsg.user === currentUser.name;
+        const isStacked = li.classList.contains('stacked');
+        li.innerHTML = getMessageInnerHTML(updatedMsg, isMe, isStacked);
+    }
+});
