@@ -9,14 +9,10 @@ const server = http.createServer(app);
 
 const io = new Server(server, { 
     maxHttpBufferSize: 1e8,
-    cors: {
-        origin: "*", 
-        methods: ["GET", "POST"]
-    }
+    cors: { origin: "*", methods: ["GET", "POST"] }
 }); 
 
 app.use(express.static(path.join(__dirname, 'public')));
-
 const db = new sqlite3.Database('./chat.db');
 
 db.serialize(() => {
@@ -28,23 +24,14 @@ db.serialize(() => {
     db.get(`SELECT id FROM rooms WHERE id = 'lobby'`, (err, row) => {
         if (!row) db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES ('lobby', 'Lobby 😸', '', 0, '')`);
     });
-
-    db.get(`SELECT id FROM rooms WHERE id = 'ai_lounge'`, (err, row) => {
-        if (!row) db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES ('ai_lounge', '🤖 AI Lounge', 'https://api.dicebear.com/7.x/bottts/svg?seed=ChitChatBot&backgroundColor=00a884', 0, '')`);
+    db.get(`SELECT id FROM rooms WHERE id = 'arcade'`, (err, row) => {
+        if (!row) db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES ('arcade', '🎮 The Arcade', 'https://api.dicebear.com/7.x/shapes/svg?seed=arcade&backgroundColor=53bdeb', 0, '')`);
     });
 });
 
 const activeUsersById = {}; 
-
-function getUsersInRoom(roomId) {
-    return Object.values(activeUsersById).filter(u => u.roomId === roomId).map(u => u.name);
-}
-
-function broadcastRooms(targetSocket = io) {
-    db.all(`SELECT id, name, logo, isPrivate FROM rooms`, (err, rows) => {
-        if (rows) targetSocket.emit('room list', rows);
-    });
-}
+function getUsersInRoom(roomId) { return Object.values(activeUsersById).filter(u => u.roomId === roomId).map(u => u.name); }
+function broadcastRooms(targetSocket = io) { db.all(`SELECT id, name, logo, isPrivate FROM rooms`, (err, rows) => { if (rows) targetSocket.emit('room list', rows); }); }
 
 async function fetchLinkPreview(url) {
     try {
@@ -53,62 +40,20 @@ async function fetchLinkPreview(url) {
         const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'WhatsAppBot/1.0' } });
         clearTimeout(timeoutId);
         const text = await res.text();
-        
         const titleMatch = text.match(/<title[^>]*>([^<]+)<\/title>/i);
         const descMatch = text.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i) || text.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
         const imgMatch = text.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-
         if (titleMatch) return { title: titleMatch[1].trim(), desc: descMatch ? descMatch[1].trim() : '', img: imgMatch ? imgMatch[1].trim() : '', url: url };
-    } catch (e) { }
-    return null;
-}
-
-async function askSmartBot(prompt) {
-    const apiKey = process.env.GEMINI_API_KEY; 
-    if (!apiKey) return "My boss forgot to put my API key in Render's Environment Variables! 😿";
-
-    try {
-        const finalPrompt = prompt + " (Keep your response conversational, under 3 sentences, and use emojis. Act like a helpful chat friend.)";
-        
-        // 🌟 THE ULTIMATE FIX: Using the universally available 'gemini-pro' model!
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                contents: [{ parts: [{ text: finalPrompt }] }],
-                safetySettings: [
-                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-                ]
-            })
-        });
-        const data = await res.json();
-        
-        if (data.error) {
-            console.error("🚨 GEMINI API ERROR:", JSON.stringify(data.error, null, 2));
-            return "My AI brain is having a connection issue... check Render logs! 🔌";
-        }
-        
-        return data.candidates[0].content.parts[0].text;
-    } catch (e) { 
-        console.error("🚨 SERVER FETCH ERROR:", e);
-        return "My brain is a little fuzzy right now... try asking again! 😵‍💫"; 
-    }
+    } catch (e) { } return null;
 }
 
 io.on('connection', (socket) => {
-    
     broadcastRooms(socket);
 
     socket.on('create room', (data) => {
         const roomId = 'room_' + Date.now();
         const isPrivateInt = data.isPrivate ? 1 : 0;
-        db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES (?, ?, ?, ?, ?)`, 
-            [roomId, data.name, '', isPrivateInt, data.password], 
-            (err) => { if (!err) broadcastRooms(); }
-        );
+        db.run(`INSERT INTO rooms (id, name, logo, isPrivate, password) VALUES (?, ?, ?, ?, ?)`, [roomId, data.name, '', isPrivateInt, data.password], (err) => { if (!err) broadcastRooms(); });
     });
 
     socket.on('join room', (data) => {
@@ -122,15 +67,11 @@ io.on('connection', (socket) => {
 
             socket.join(room.id);
             activeUsersById[socket.id] = { ...data.user, roomId: room.id };
-
-            db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen, bubbleColor) VALUES (?, ?, ?, ?, ?, ?)", 
-                [data.user.name, data.user.avatar, data.user.about, 1, Date.now(), data.user.color || '#dcf8c6']);
+            db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen, bubbleColor) VALUES (?, ?, ?, ?, ?, ?)", [data.user.name, data.user.avatar, data.user.about, 1, Date.now(), data.user.color || '#dcf8c6']);
 
             db.all("SELECT data FROM history WHERE roomId = ? ORDER BY timestamp ASC LIMIT 50", [room.id], (err, rows) => {
                 const history = rows ? rows.map(row => JSON.parse(row.data)) : [];
-                const clientRoom = { id: room.id, name: room.name, logo: room.logo, isPrivate: room.isPrivate === 1 };
-                
-                socket.emit('chat history', { room: clientRoom, history: history });
+                socket.emit('chat history', { room: { id: room.id, name: room.name, logo: room.logo, isPrivate: room.isPrivate === 1 }, history: history });
                 socket.emit('pinned updated', room.pinnedMessage ? JSON.parse(room.pinnedMessage) : null);
                 
                 if (!data.isReconnect) {
@@ -157,8 +98,7 @@ io.on('connection', (socket) => {
             activeUsersById[socket.id].avatar = user.avatar;
             activeUsersById[socket.id].about = user.about;
         }
-        db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen, bubbleColor) VALUES (?, ?, ?, ?, ?, ?)", 
-            [user.name, user.avatar, user.about, 1, Date.now(), user.color || '#dcf8c6']);
+        db.run("INSERT OR REPLACE INTO users (name, avatar, about, isOnline, lastSeen, bubbleColor) VALUES (?, ?, ?, ?, ?, ?)", [user.name, user.avatar, user.about, 1, Date.now(), user.color || '#dcf8c6']);
     });
 
     socket.on('get user info', (username) => {
@@ -186,58 +126,72 @@ io.on('connection', (socket) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return; 
         data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
-        
-        data.type = 'chat'; data.reactions = {}; data.status = 'delivered'; 
-        data.roomId = roomId;
+        data.type = 'chat'; data.reactions = {}; data.status = 'delivered'; data.roomId = roomId;
         
         if (data.text) {
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            const urls = data.text.match(urlRegex);
+            const urls = data.text.match(/(https?:\/\/[^\s]+)/g);
             if (urls && urls.length > 0) {
                 const preview = await fetchLinkPreview(urls[0]);
                 if (preview) data.linkPreview = preview;
             }
         }
         
-        if (!data.isGhost) {
-            db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [data.id, roomId, Date.now(), JSON.stringify(data)]);
-        }
-        
+        if (!data.isGhost) db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [data.id, roomId, Date.now(), JSON.stringify(data)]);
         io.to(roomId).emit('chat message', data);
         socket.broadcast.emit('global room alert', roomId);
+    });
 
-        const isBotMentioned = data.text && data.text.toLowerCase().includes('@bot');
-        const isAiLounge = roomId === 'ai_lounge';
+    // 🌟 NEW: The Live Multiplayer Game Engine!
+    socket.on('start game', () => {
+        const roomId = activeUsersById[socket.id]?.roomId;
+        if(!roomId) return;
+        const gameMsg = {
+            id: Date.now().toString(), type: 'game', gameType: 'tictactoe', roomId: roomId, 
+            user: activeUsersById[socket.id].name, avatar: activeUsersById[socket.id].avatar,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            board: ['', '', '', '', '', '', '', '', ''], turn: 'X', players: { X: activeUsersById[socket.id].name, O: null }, winner: null, status: 'delivered', reactions: {}
+        };
+        db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [gameMsg.id, roomId, Date.now(), JSON.stringify(gameMsg)]);
+        io.to(roomId).emit('chat message', gameMsg);
+    });
 
-        if (data.user !== '🤖 Bot' && (isBotMentioned || isAiLounge)) {
-            socket.to(roomId).emit('user typing', { name: '🤖 Bot', isTyping: true });
-            
-            setTimeout(async () => {
-                let prompt = data.text.replace(/@bot/gi, '').trim();
-                if (!prompt) prompt = "Say hello to everyone!";
-                
-                let botReply = await askSmartBot(prompt);
+    socket.on('play move', (data) => {
+        const roomId = activeUsersById[socket.id]?.roomId;
+        const playerName = activeUsersById[socket.id]?.name;
+        if(!roomId) return;
 
-                const botMsg = {
-                    id: Date.now().toString() + 'bot', user: '🤖 Bot', roomId: roomId,
-                    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=ChitChatBot&backgroundColor=00a884',
-                    text: botReply, type: 'chat', reactions: {}, status: 'delivered', color: '#00a884',
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), isGhost: false
-                };
+        db.get("SELECT data FROM history WHERE id = ?", [data.msgId], (err, row) => {
+            if(row) {
+                const msg = JSON.parse(row.data);
+                if(msg.type !== 'game' || msg.winner) return;
 
-                io.to(roomId).emit('user typing', { name: '🤖 Bot', isTyping: false });
-                db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [botMsg.id, roomId, Date.now(), JSON.stringify(botMsg)]);
-                io.to(roomId).emit('chat message', botMsg);
-                socket.broadcast.emit('global room alert', roomId);
-            }, 1500);
-        }
+                if (!msg.players.O && msg.players.X !== playerName) msg.players.O = playerName;
+                if (msg.players[msg.turn] !== playerName) return; 
+
+                if(msg.board[data.index] === '') {
+                    msg.board[data.index] = msg.turn;
+                    
+                    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+                    for(let line of lines) {
+                        const [a,b,c] = line;
+                        if(msg.board[a] && msg.board[a] === msg.board[b] && msg.board[a] === msg.board[c]) {
+                            msg.winner = playerName; break;
+                        }
+                    }
+                    if(!msg.winner && !msg.board.includes('')) msg.winner = 'Draw';
+                    if(!msg.winner) msg.turn = msg.turn === 'X' ? 'O' : 'X';
+
+                    db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), data.msgId]);
+                    io.to(roomId).emit('game updated', msg);
+                }
+            }
+        });
     });
 
     socket.on('vote poll', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         const voterName = activeUsersById[socket.id]?.name;
         if(!roomId || !voterName) return;
-
         db.get("SELECT data FROM history WHERE id = ?", [data.msgId], (err, row) => {
             if (row) {
                 const msg = JSON.parse(row.data);
@@ -247,7 +201,6 @@ io.on('connection', (socket) => {
                         if (index > -1) opt.votes.splice(index, 1);
                     });
                     msg.poll.options[data.optionIndex].votes.push(voterName);
-                    
                     db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), data.msgId]);
                     io.to(roomId).emit('poll updated', msg);
                 }
@@ -302,7 +255,6 @@ io.on('connection', (socket) => {
                 const msg = JSON.parse(row.data); 
                 msg.reactions = msg.reactions || {};
                 msg.reactions[data.emoji] = (msg.reactions[data.emoji] || 0) + 1;
-                
                 db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), data.msgId]);
                 io.to(roomId).emit('update reactions', { id: data.msgId, reactions: msg.reactions });
             }
