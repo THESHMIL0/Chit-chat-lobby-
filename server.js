@@ -141,49 +141,97 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('global room alert', roomId);
     });
 
-    // 🌟 NEW: The Live Multiplayer Game Engine!
-    socket.on('start game', () => {
+    // 🌟 THE NEW MASTER GAME ENGINE
+    socket.on('create game session', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
-        if(!roomId) return;
+        const hostName = activeUsersById[socket.id]?.name;
+        if(!roomId || !hostName) return;
+
         const gameMsg = {
-            id: Date.now().toString(), type: 'game', gameType: 'tictactoe', roomId: roomId, 
-            user: activeUsersById[socket.id].name, avatar: activeUsersById[socket.id].avatar,
+            id: Date.now().toString(), type: 'game_session', roomId: roomId, 
+            user: hostName, avatar: activeUsersById[socket.id].avatar,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            board: ['', '', '', '', '', '', '', '', ''], turn: 'X', players: { X: activeUsersById[socket.id].name, O: null }, winner: null, status: 'delivered', reactions: {}
+            gameType: data.gameType, // 'tictactoe' or 'dice'
+            state: 'waiting', // waiting, playing, finished
+            players: [hostName], 
+            gameState: {}, 
+            status: 'delivered', reactions: {}
         };
+
         db.run("INSERT INTO history (id, roomId, timestamp, data) VALUES (?, ?, ?, ?)", [gameMsg.id, roomId, Date.now(), JSON.stringify(gameMsg)]);
         io.to(roomId).emit('chat message', gameMsg);
     });
 
-    socket.on('play move', (data) => {
+    socket.on('game action', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         const playerName = activeUsersById[socket.id]?.name;
-        if(!roomId) return;
+        if(!roomId || !playerName) return;
 
         db.get("SELECT data FROM history WHERE id = ?", [data.msgId], (err, row) => {
             if(row) {
                 const msg = JSON.parse(row.data);
-                if(msg.type !== 'game' || msg.winner) return;
+                if(msg.type !== 'game_session') return;
 
-                if (!msg.players.O && msg.players.X !== playerName) msg.players.O = playerName;
-                if (msg.players[msg.turn] !== playerName) return; 
-
-                if(msg.board[data.index] === '') {
-                    msg.board[data.index] = msg.turn;
-                    
-                    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-                    for(let line of lines) {
-                        const [a,b,c] = line;
-                        if(msg.board[a] && msg.board[a] === msg.board[b] && msg.board[a] === msg.board[c]) {
-                            msg.winner = playerName; break;
+                if (data.action === 'join') {
+                    if (msg.state === 'waiting' && !msg.players.includes(playerName)) {
+                        if (msg.gameType === 'tictactoe' && msg.players.length >= 2) return; // Full
+                        msg.players.push(playerName);
+                    }
+                } 
+                else if (data.action === 'start') {
+                    if (msg.user === playerName && msg.players.length >= (msg.gameType === 'tictactoe' ? 2 : 1)) {
+                        msg.state = 'playing';
+                        if (msg.gameType === 'tictactoe') {
+                            msg.gameState = { board: ['','','','','','','','',''], turn: msg.players[0], winner: null };
+                        } else if (msg.gameType === 'dice') {
+                            msg.gameState = { rolls: {}, winner: null };
                         }
                     }
-                    if(!msg.winner && !msg.board.includes('')) msg.winner = 'Draw';
-                    if(!msg.winner) msg.turn = msg.turn === 'X' ? 'O' : 'X';
-
-                    db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), data.msgId]);
-                    io.to(roomId).emit('game updated', msg);
                 }
+                else if (data.action === 'move' && msg.state === 'playing') {
+                    if (!msg.players.includes(playerName)) return;
+
+                    if (msg.gameType === 'tictactoe' && !msg.gameState.winner) {
+                        if (msg.gameState.turn !== playerName) return;
+                        if (msg.gameState.board[data.payload.index] === '') {
+                            msg.gameState.board[data.payload.index] = msg.gameState.turn;
+                            
+                            const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+                            for(let line of lines) {
+                                const [a,b,c] = line;
+                                if(msg.gameState.board[a] && msg.gameState.board[a] === msg.gameState.board[b] && msg.gameState.board[a] === msg.gameState.board[c]) {
+                                    msg.gameState.winner = playerName; msg.state = 'finished'; break;
+                                }
+                            }
+                            if(!msg.gameState.winner && !msg.gameState.board.includes('')) {
+                                msg.gameState.winner = 'Draw'; msg.state = 'finished';
+                            }
+                            if(!msg.gameState.winner) {
+                                msg.gameState.turn = msg.gameState.turn === msg.players[0] ? msg.players[1] : msg.players[0];
+                            }
+                        }
+                    } 
+                    else if (msg.gameType === 'dice' && !msg.gameState.winner) {
+                        if (!msg.gameState.rolls[playerName]) {
+                            msg.gameState.rolls[playerName] = Math.floor(Math.random() * 6) + 1; // Roll 1-6
+                            
+                            // Check if everyone rolled
+                            if (Object.keys(msg.gameState.rolls).length === msg.players.length) {
+                                let highestScore = 0;
+                                let winners = [];
+                                for (const [p, score] of Object.entries(msg.gameState.rolls)) {
+                                    if (score > highestScore) { highestScore = score; winners = [p]; }
+                                    else if (score === highestScore) { winners.push(p); }
+                                }
+                                msg.gameState.winner = winners.length > 1 ? "It's a Tie!" : winners[0];
+                                msg.state = 'finished';
+                            }
+                        }
+                    }
+                }
+
+                db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), data.msgId]);
+                io.to(roomId).emit('game updated', msg);
             }
         });
     });
@@ -249,12 +297,23 @@ io.on('connection', (socket) => {
 
     socket.on('react message', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
-        if(!roomId) return;
+        const playerName = activeUsersById[socket.id]?.name;
+        if(!roomId || !playerName) return;
         db.get("SELECT data FROM history WHERE id = ?", [data.msgId], (err, row) => {
             if (row) {
                 const msg = JSON.parse(row.data); 
                 msg.reactions = msg.reactions || {};
-                msg.reactions[data.emoji] = (msg.reactions[data.emoji] || 0) + 1;
+                
+                // Remove player's old reaction if they click a new one
+                for (let e in msg.reactions) {
+                    msg.reactions[e] = msg.reactions[e].filter(name => name !== playerName);
+                    if (msg.reactions[e].length === 0) delete msg.reactions[e];
+                }
+                
+                // Add new reaction
+                msg.reactions[data.emoji] = msg.reactions[data.emoji] || [];
+                msg.reactions[data.emoji].push(playerName);
+                
                 db.run("UPDATE history SET data = ? WHERE id = ?", [JSON.stringify(msg), data.msgId]);
                 io.to(roomId).emit('update reactions', { id: data.msgId, reactions: msg.reactions });
             }
