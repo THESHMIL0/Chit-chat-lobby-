@@ -83,9 +83,18 @@ async function askSmartBot(prompt) {
             })
         });
         const data = await res.json();
-        if (data.error) return "My AI brain is having a connection issue... check Render logs! 🔌";
+        
+        // 🌟 NEW: This will print the exact reason Google blocked it to your Render Logs!
+        if (data.error) {
+            console.error("🚨 GEMINI API ERROR:", JSON.stringify(data.error, null, 2));
+            return "My AI brain is having a connection issue... check Render logs! 🔌";
+        }
+        
         return data.candidates[0].content.parts[0].text;
-    } catch (e) { return "My brain is a little fuzzy right now... try asking again! 😵‍💫"; }
+    } catch (e) { 
+        console.error("🚨 SERVER FETCH ERROR:", e);
+        return "My brain is a little fuzzy right now... try asking again! 😵‍💫"; 
+    }
 }
 
 io.on('connection', (socket) => {
@@ -177,7 +186,6 @@ io.on('connection', (socket) => {
         if(!roomId) return; 
         data.id = Date.now().toString() + Math.floor(Math.random() * 1000); 
         
-        // 🌟 NEW: Set up Reactions instead of Likes
         data.type = 'chat'; data.reactions = {}; data.status = 'delivered'; 
         data.roomId = roomId;
         
@@ -285,7 +293,6 @@ io.on('connection', (socket) => {
         if(roomId) socket.to(roomId).emit('user typing', { name: activeUsersById[socket.id].name, isTyping });
     });
 
-    // 🌟 NEW: Handle Dynamic Reactions
     socket.on('react message', (data) => {
         const roomId = activeUsersById[socket.id]?.roomId;
         if(!roomId) return;
