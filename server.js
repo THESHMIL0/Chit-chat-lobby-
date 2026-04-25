@@ -70,8 +70,8 @@ async function askSmartBot(prompt) {
     try {
         const finalPrompt = prompt + " (Keep your response conversational, under 3 sentences, and use emojis. Act like a helpful chat friend.)";
         
-        // 🌟 BUG FIX: Updated the model name to 'gemini-1.5-flash-latest' so Google recognizes it!
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+        // 🌟 THE ULTIMATE FIX: Using the universally available 'gemini-pro' model!
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -171,7 +171,7 @@ io.on('connection', (socket) => {
         if (data.logo) { updates.push("logo = ?"); params.push(data.logo); }
         if (updates.length > 0) {
             params.push(data.roomId);
-            db.run(`UPDATE SET ${updates.join(', ')} WHERE id = ?`, params, (err) => {
+            db.run(`UPDATE rooms SET ${updates.join(', ')} WHERE id = ?`, params, (err) => {
                 if (!err) {
                     broadcastRooms();
                     db.get(`SELECT * FROM rooms WHERE id = ?`, [data.roomId], (err, room) => {
