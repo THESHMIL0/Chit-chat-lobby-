@@ -6,10 +6,16 @@
     <title>Chit Chat Lobby</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#008069">
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css">
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
 </head>
 <body>
+    <div id="app-lock-screen" class="screen hidden" style="z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--bg-main); backdrop-filter: blur(15px);">
+        <div style="font-size: 80px; margin-bottom: 20px; text-shadow: 0 10px 20px rgba(0,0,0,0.3);">🔒</div>
+        <h2 style="color: var(--text-primary); font-size: 24px;">Chit Chat is Locked</h2>
+        <button id="unlock-app-btn" class="primary-btn" style="width: 80%; margin-top: 30px; box-shadow: 0 10px 30px rgba(0, 168, 132, 0.4);">Scan Fingerprint 🔓</button>
+    </div>
+
     <div id="loading-screen" class="screen" style="z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--bg-main);">
         <div class="spinner"></div>
         <h2 style="color: var(--text-primary); margin-top: 25px; font-size: 22px;">Connecting to Server...</h2>
@@ -37,9 +43,7 @@
     <div id="room-list-screen" class="screen hidden">
         <div class="app-header">
             <span>Chats</span>
-            <div>
-                <button id="settings-btn" class="icon-btn" style="margin-left: 10px;">⋮</button>
-            </div>
+            <div><button id="settings-btn" class="icon-btn" style="margin-left: 10px;">⋮</button></div>
         </div>
         <ul id="rooms-ul"></ul>
         <button id="show-create-room-btn" class="fab-btn">💬</button>
@@ -47,7 +51,7 @@
 
     <div id="profile-screen" class="screen hidden">
         <div class="app-header">
-            <button id="close-profile-btn" class="icon-btn" style="margin-right:10px;">⬅</button>
+            <button id="close-profile-btn" class="icon-btn">⬅</button>
             <span>Profile</span>
         </div>
         <div class="profile-scroll-container">
@@ -57,15 +61,9 @@
                 <div class="edit-icon">📷</div>
             </div>
             <div class="profile-card">
-                <div class="profile-input-group">
-                    <label>👤 Name</label>
-                    <input type="text" id="settings-username" autocomplete="nope" />
-                </div>
+                <div class="profile-input-group"><label>👤 Name</label><input type="text" id="settings-username" autocomplete="nope" /></div>
                 <div class="profile-divider"></div>
-                <div class="profile-input-group">
-                    <label>ℹ️ About</label>
-                    <input type="text" id="settings-about" autocomplete="nope" placeholder="Hey there! I am using Chit Chat." />
-                </div>
+                <div class="profile-input-group"><label>ℹ️ About</label><input type="text" id="settings-about" autocomplete="nope" placeholder="Hey there! I am using Chit Chat." /></div>
                 <div class="profile-divider"></div>
                 <div class="profile-input-group" style="display:flex; justify-content:space-between; align-items:center;">
                     <label style="margin-bottom: 0;">🎨 Chat Bubble Color</label>
@@ -78,7 +76,7 @@
 
     <div id="chat-screen" class="screen hidden">
         <div class="app-header" id="chat-header">
-            <button id="back-btn" class="icon-btn" style="margin-right:10px;">⬅</button>
+            <button id="back-btn" class="icon-btn">⬅</button>
             <div id="header-click-area" style="display:flex; align-items:center; flex-grow:1; cursor:pointer;">
                 <img id="current-room-logo" src="" class="header-avatar">
                 <div class="header-text-container">
@@ -108,7 +106,6 @@
         <div id="chat-footer-controls">
             <div class="input-pill">
                 <button id="poll-btn" class="icon-btn" style="font-size: 19px;">📊</button>
-                <button id="game-btn" class="icon-btn" style="font-size: 20px;">🎮</button>
                 <input id="the-chat-box" type="text" autocomplete="nope" spellcheck="false" placeholder="Message" />
                 <button id="attach-btn" class="icon-btn">📎</button>
                 <input type="file" id="image-upload" accept="image/*, video/mp4, video/webm, image/gif" class="hidden" />
@@ -118,115 +115,31 @@
         </div>
     </div>
 
-    <div id="group-info-modal" class="modal hidden">
-        <div class="modal-content" style="align-items: center;">
-            <div class="modal-drag-pill"></div>
-            
-            <div id="info-avatar-container" onclick="document.getElementById('group-pic-upload').click()">
-                <img id="info-room-logo" src="">
-                <div class="edit-icon">📷</div>
-            </div>
-            <input type="file" id="group-pic-upload" accept="image/*" class="hidden" />
-
-            <div class="input-with-icon" style="width: 100%;">
-                <span class="input-icon">🏷️</span>
-                <input type="text" id="info-room-name" class="premium-input" placeholder="Group Name">
-            </div>
-            <button id="save-group-info-btn" class="primary-btn" style="margin-bottom: 25px;">Save Name</button>
-
-            <div class="menu-list" style="width: 100%;">
-                <button id="btn-open-search" class="menu-btn"><span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;">🔍</span> Search Chat</button>
-                <button id="btn-change-wallpaper" class="menu-btn"><span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: var(--accent);">🖼️</span> Set Wallpaper</button>
-                <button id="btn-reset-wallpaper" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Reset Wallpaper</button>
-                <input type="file" id="wallpaper-upload" accept="image/*" class="hidden">
-            </div>
-        </div>
-    </div>
-
-    <div id="create-poll-modal" class="modal hidden">
-        <div class="modal-content form-modal">
-            <div class="modal-drag-pill"></div>
-            <h3>Create a Poll 📊</h3>
-            <input type="text" id="poll-question" class="premium-input" placeholder="Ask a question..." style="margin-top:15px; margin-bottom: 15px;">
-            <div id="poll-options-container" style="display:flex; flex-direction:column; gap:8px;">
-                <input type="text" class="premium-input poll-opt-input" placeholder="Option 1" style="margin-bottom:0;">
-                <input type="text" class="premium-input poll-opt-input" placeholder="Option 2" style="margin-bottom:0;">
-            </div>
-            <button id="add-poll-opt-btn" class="menu-btn" style="color:var(--accent); justify-content:center; margin-top:10px; border:1px dashed var(--accent); border-radius:15px;">➕ Add Option</button>
-            <button id="send-poll-btn" class="primary-btn" style="margin-top:15px;">Send Poll</button>
-        </div>
-    </div>
-
-    <div id="view-profile-modal" class="modal hidden">
-        <div class="modal-content" style="align-items: center; text-align: center;">
-            <div class="modal-drag-pill"></div>
-            <img id="view-profile-avatar" src="" style="width:120px; height:120px; border-radius:50%; margin-bottom:10px; object-fit:cover; border: 3px solid var(--accent);">
-            <h2 id="view-profile-name" style="margin-bottom: 5px;"></h2>
-            <p id="view-profile-about" style="font-size: 15px; margin-bottom: 8px;"></p>
-            <p id="view-profile-last-seen"></p>
-            <button class="primary-btn" onclick="document.getElementById('view-profile-modal').classList.add('hidden')">Close</button>
-        </div>
-    </div>
-
-    <div id="message-options-modal" class="modal hidden">
-        <div class="modal-content menu-list" style="padding-top: 15px;">
-            <div class="modal-drag-pill"></div>
-            
-            <div class="reaction-bar">
-                <button class="react-btn">❤️</button>
-                <button class="react-btn">😂</button>
-                <button class="react-btn">😲</button>
-                <button class="react-btn">😢</button>
-                <button class="react-btn">🙏</button>
-                <button class="react-btn">👍</button>
-            </div>
-            
-            <button id="opt-reply" class="menu-btn"><span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;">↩️</span> Reply</button>
-            <button id="opt-pin" class="menu-btn"><span class="menu-icon" style="background: rgba(255, 179, 0, 0.15); color: #ffb300;">📌</span> Pin</button>
-            <button id="opt-edit" class="menu-btn hidden"><span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: var(--accent);">✏️</span> Edit</button>
-            <button id="opt-delete" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Delete</button>
-        </div>
-    </div>
-
     <div id="app-settings-modal" class="modal hidden">
         <div class="modal-content menu-list">
             <div class="modal-drag-pill"></div>
             <h3 style="text-align: center; margin-bottom: 15px; color: var(--text-primary);">Settings ⚙️</h3>
             <button id="btn-open-profile" class="menu-btn"><span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: var(--accent);">👤</span> Edit Profile</button>
+            
+            <label class="premium-toggle menu-btn" style="border-bottom: 1px solid var(--border-color);">
+                <div style="display:flex; align-items:center; gap:15px;"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🔒</span> App Lock</div>
+                <div class="switch"><input type="checkbox" id="toggle-app-lock"><span class="slider"></span></div>
+            </label>
+
             <button id="btn-theme-cycle" class="menu-btn"><span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;" id="theme-btn-icon">☀️</span> App Theme</button>
             <button id="btn-logout" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🚪</span> Logout & Reset App</button>
         </div>
     </div>
 
-    <div id="create-room-modal" class="modal hidden">
-        <div class="modal-content form-modal">
-            <div class="modal-drag-pill"></div>
-            <h3>New Room</h3>
-            <div style="margin-top: 15px; margin-bottom: 10px;">
-                <input type="text" id="new-room-name" class="premium-input" placeholder="Room Name" autocomplete="nope">
-            </div>
-            <label class="premium-toggle">
-                <span>Private (Needs Password)</span>
-                <div class="switch"><input type="checkbox" id="new-room-private"><span class="slider"></span></div>
-            </label>
-            <div class="hidden" id="password-input-container" style="margin-bottom: 10px;">
-                <input type="text" id="new-room-pass" class="premium-input" placeholder="Password" autocomplete="nope">
-            </div>
-            <button id="create-room-submit" class="primary-btn" style="margin-top: 15px;">Create</button>
-        </div>
-    </div>
-
-    <div id="password-modal" class="modal hidden">
-        <div class="modal-content form-modal">
-            <div class="modal-drag-pill"></div>
-            <h3>Private Room</h3>
-            <p class="modal-subtitle" style="margin-bottom: 15px;">This room requires a password</p>
-            <input type="text" id="join-room-pass" class="premium-input" placeholder="Enter Password" autocomplete="nope" style="margin-bottom: 15px;">
-            <button id="join-room-submit" class="primary-btn">Join Room</button>
-        </div>
-    </div>
+    <div id="group-info-modal" class="modal hidden"> <div class="modal-content" style="align-items: center;"> <div class="modal-drag-pill"></div> <div id="info-avatar-container" onclick="document.getElementById('group-pic-upload').click()"> <img id="info-room-logo" src=""> <div class="edit-icon">📷</div> </div> <input type="file" id="group-pic-upload" accept="image/*" class="hidden" /> <div class="input-with-icon" style="width: 100%;"> <span class="input-icon">🏷️</span> <input type="text" id="info-room-name" class="premium-input" placeholder="Group Name"> </div> <button id="save-group-info-btn" class="primary-btn" style="margin-bottom: 25px;">Save Name</button> <div class="menu-list" style="width: 100%;"> <button id="btn-open-search" class="menu-btn"><span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;">🔍</span> Search Chat</button> <button id="btn-change-wallpaper" class="menu-btn"><span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: var(--accent);">🖼️</span> Set Wallpaper</button> <button id="btn-reset-wallpaper" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Reset Wallpaper</button> <input type="file" id="wallpaper-upload" accept="image/*" class="hidden"> </div> </div> </div>
+    <div id="create-poll-modal" class="modal hidden"> <div class="modal-content form-modal"> <div class="modal-drag-pill"></div> <h3>Create a Poll 📊</h3> <input type="text" id="poll-question" class="premium-input" placeholder="Ask a question..." style="margin-top:15px; margin-bottom: 15px;"> <div id="poll-options-container" style="display:flex; flex-direction:column; gap:8px;"> <input type="text" class="premium-input poll-opt-input" placeholder="Option 1" style="margin-bottom:0;"> <input type="text" class="premium-input poll-opt-input" placeholder="Option 2" style="margin-bottom:0;"> </div> <button id="add-poll-opt-btn" class="menu-btn" style="color:var(--accent); justify-content:center; margin-top:10px; border:1px dashed var(--accent); border-radius:15px;">➕ Add Option</button> <button id="send-poll-btn" class="primary-btn" style="margin-top:15px;">Send Poll</button> </div> </div>
+    <div id="view-profile-modal" class="modal hidden"> <div class="modal-content" style="align-items: center; text-align: center;"> <div class="modal-drag-pill"></div> <img id="view-profile-avatar" src="" style="width:120px; height:120px; border-radius:50%; margin-bottom:10px; object-fit:cover; border: 3px solid var(--accent);"> <h2 id="view-profile-name" style="margin-bottom: 5px;"></h2> <p id="view-profile-about" style="font-size: 15px; margin-bottom: 8px;"></p> <p id="view-profile-last-seen"></p> <button class="primary-btn" onclick="document.getElementById('view-profile-modal').classList.add('hidden')">Close</button> </div> </div>
+    <div id="message-options-modal" class="modal hidden"> <div class="modal-content menu-list" style="padding-top: 15px;"> <div class="modal-drag-pill"></div> <div class="reaction-bar"> <button class="react-btn">❤️</button> <button class="react-btn">😂</button> <button class="react-btn">😲</button> <button class="react-btn">😢</button> <button class="react-btn">🙏</button> <button class="react-btn">👍</button> </div> <button id="opt-reply" class="menu-btn"><span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;">↩️</span> Reply</button> <button id="opt-pin" class="menu-btn"><span class="menu-icon" style="background: rgba(255, 179, 0, 0.15); color: #ffb300;">📌</span> Pin</button> <button id="opt-edit" class="menu-btn hidden"><span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: var(--accent);">✏️</span> Edit</button> <button id="opt-delete" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Delete</button> </div> </div>
+    <div id="create-room-modal" class="modal hidden"> <div class="modal-content form-modal"> <div class="modal-drag-pill"></div> <h3>New Room</h3> <div style="margin-top: 15px; margin-bottom: 10px;"> <input type="text" id="new-room-name" class="premium-input" placeholder="Room Name" autocomplete="nope"> </div> <label class="premium-toggle"> <span>Private (Needs Password)</span> <div class="switch"><input type="checkbox" id="new-room-private"><span class="slider"></span></div> </label> <div class="hidden" id="password-input-container" style="margin-bottom: 10px;"> <input type="text" id="new-room-pass" class="premium-input" placeholder="Password" autocomplete="nope"> </div> <button id="create-room-submit" class="primary-btn" style="margin-top: 15px;">Create</button> </div> </div>
+    <div id="password-modal" class="modal hidden"> <div class="modal-content form-modal"> <div class="modal-drag-pill"></div> <h3>Private Room</h3> <p class="modal-subtitle" style="margin-bottom: 15px;">This room requires a password</p> <input type="text" id="join-room-pass" class="premium-input" placeholder="Enter Password" autocomplete="nope" style="margin-bottom: 15px;"> <button id="join-room-submit" class="primary-btn">Join Room</button> </div> </div>
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="script.js?v=7"></script>
+    
+    <script src="script.js"></script>
 </body>
 </html>
