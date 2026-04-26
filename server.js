@@ -95,11 +95,13 @@ io.on('connection', (socket) => {
     });
 
     socket.on('chat message', async (data) => {
-        const user = activeUsersById[socket.id];
-        if (!user) return;
-        const roomId = user.roomId;
+        // 🌟 THE FIX: If the user's session fell asleep, trust the data payload they sent!
+        const roomId = activeUsersById[socket.id]?.roomId || data.roomId || 'lobby';
+        
         data.id = Date.now() + "_" + Math.random();
-        data.roomId = roomId; data.type = 'chat'; data.status = 'delivered';
+        data.roomId = roomId; 
+        data.type = 'chat'; 
+        data.status = 'delivered';
 
         if (!data.isGhost) db.run("INSERT INTO history VALUES (?, ?, ?, ?)", [data.id, roomId, Date.now(), JSON.stringify(data)]);
         
@@ -116,7 +118,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('typing', (isTyping) => { const roomId = activeUsersById[socket.id]?.roomId; if(roomId) socket.to(roomId).emit('user typing', { name: activeUsersById[socket.id].name, isTyping }); });
+    socket.on('typing', (isTyping) => { const roomId = activeUsersById[socket.id]?.roomId; if(roomId) socket.to(roomId).emit('user typing', { name: activeUsersById[socket.id]?.name || 'Someone', isTyping }); });
 
     socket.on('disconnect', () => {
         const userData = activeUsersById[socket.id];
