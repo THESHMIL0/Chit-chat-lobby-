@@ -3,143 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chit Chat Lobby</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#008069">
-    <link rel="stylesheet" href="style.css">
-    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
+    <title>Chit Chat - Web Lite</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        /* PURE, FAST, LITE CSS */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #0b141a; color: #e9edef; overflow: hidden; height: 100dvh; display: flex; flex-direction: column; }
+        
+        /* Landing Page Styles */
+        #landing-page { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; background: radial-gradient(circle at top, #202c33 0%, #0b141a 70%); }
+        .logo { font-size: 70px; margin-bottom: 10px; animation: bounce 2s infinite; }
+        h1 { color: #00a884; font-size: 36px; margin-bottom: 10px; }
+        p { color: #8696a0; max-width: 400px; margin-bottom: 30px; font-size: 16px; line-height: 1.5; }
+        
+        .btn { padding: 15px 30px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; width: 100%; max-width: 280px; margin-bottom: 15px; transition: transform 0.1s; text-align: center; }
+        .btn:active { transform: scale(0.95); }
+        .btn-primary { background: linear-gradient(135deg, #00a884, #02d1a3); color: white; border: none; box-shadow: 0 10px 20px rgba(0, 168, 132, 0.3); }
+        .btn-secondary { background: #202c33; color: #53bdeb; border: 2px solid #53bdeb; }
+
+        /* Chat Lite Styles */
+        #chat-interface { display: none; flex-direction: column; height: 100dvh; width: 100%; max-width: 800px; margin: 0 auto; background: #0b141a; border-left: 1px solid #202c33; border-right: 1px solid #202c33; }
+        .chat-header { background: #202c33; padding: 15px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #3b4a54; }
+        .chat-header h2 { font-size: 18px; color: #e9edef; }
+        .chat-header span { font-size: 12px; color: #00a884; }
+        
+        #messages { flex: 1; overflow-y: auto; padding: 20px; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 75%; padding: 10px 15px; border-radius: 15px; font-size: 15px; line-height: 1.4; position: relative; }
+        .msg-me { align-self: flex-end; background: #005c4b; border-bottom-right-radius: 4px; }
+        .msg-other { align-self: flex-start; background: #202c33; border-bottom-left-radius: 4px; }
+        .msg-sender { font-size: 12px; font-weight: bold; color: #53bdeb; margin-bottom: 4px; display: block; }
+        .msg-time { font-size: 10px; color: rgba(255,255,255,0.6); float: right; margin-left: 15px; margin-top: 5px; }
+
+        .chat-input-area { padding: 15px; background: #202c33; display: flex; gap: 10px; align-items: center; }
+        #msg-input { flex: 1; padding: 15px; border-radius: 25px; border: none; background: #2a3942; color: white; font-size: 16px; outline: none; }
+        #send-btn { background: #00a884; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 20px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        #send-btn:active { transform: scale(0.9); }
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    </style>
 </head>
 <body>
-    <div id="app-lock-screen" class="screen hidden" style="z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--bg-main); backdrop-filter: blur(15px);">
-        <div style="font-size: 80px; margin-bottom: 20px; text-shadow: 0 10px 20px rgba(0,0,0,0.3);">🔒</div>
-        <h2 style="color: var(--text-primary); font-size: 24px;">Chit Chat is Locked</h2>
-        <button id="unlock-app-btn" class="primary-btn" style="width: 80%; margin-top: 30px; box-shadow: 0 10px 30px rgba(0, 168, 132, 0.4);">Scan Fingerprint 🔓</button>
+
+    <div id="landing-page">
+        <div class="logo">😸</div>
+        <h1>Chit Chat</h1>
+        <p>Experience the ultimate chatting app. Connect via the lightweight web version, or download the app for Voice Notes, Biometric Locks, and Themes!</p>
+        
+        <a href="https://github.com/YOUR-USERNAME/YOUR-REPO/releases/download/v1.0/ChitChat.apk" class="btn btn-primary">📥 Download Full App (Android)</a>
+        
+        <button id="join-lite-btn" class="btn btn-secondary">🌐 Join Web Chat (Lite)</button>
     </div>
 
-    <div id="loading-screen" class="screen" style="z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--bg-main);">
-        <div class="spinner"></div>
-        <h2 style="color: var(--text-primary); margin-top: 25px; font-size: 22px;">Connecting to Server...</h2>
-        <p style="color: var(--text-secondary); text-align: center; max-width: 80%; margin-top: 10px; font-size: 14px; line-height: 1.5;">If the server was asleep, this might take up to 50 seconds to wake up. Hang tight! ☕</p>
-    </div>
-
-    <div id="lightbox" class="hidden">
-        <div id="lightbox-close-area"><span id="lightbox-close">✖</span></div>
-        <img id="lightbox-img" src="">
-    </div>
-
-    <div id="login-screen" class="screen hidden">
-        <div class="login-card">
-            <h2>Welcome 😸</h2>
-            <div id="avatar-preview-container" onclick="document.getElementById('profile-pic-upload').click()">
-                <img id="avatar-preview" src="https://api.dicebear.com/7.x/bottts/svg?seed=guest" alt="Avatar">
-                <div class="edit-icon">📷</div>
-            </div>
-            <input type="file" id="profile-pic-upload" accept="image/*" class="hidden" />
-            <input type="text" id="username-input" class="premium-input" placeholder="Enter your name..." autocomplete="nope" required />
-            <button id="login-btn">Continue</button>
-        </div>
-    </div>
-
-    <div id="room-list-screen" class="screen hidden">
-        <div class="app-header">
-            <span>Chats</span>
-            <div><button id="settings-btn" class="icon-btn" style="margin-left: 10px;">⋮</button></div>
-        </div>
-        <ul id="rooms-ul"></ul>
-        <button id="show-create-room-btn" class="fab-btn">💬</button>
-    </div>
-
-    <div id="profile-screen" class="screen hidden">
-        <div class="app-header">
-            <button id="close-profile-btn" class="icon-btn">⬅</button>
-            <span>Profile</span>
-        </div>
-        <div class="profile-scroll-container">
-            <div class="profile-header-bg"></div>
-            <div id="settings-avatar-container" onclick="document.getElementById('profile-pic-upload').click()">
-                <img id="settings-avatar-preview" src="" alt="Avatar">
-                <div class="edit-icon">📷</div>
-            </div>
-            <div class="profile-card">
-                <div class="profile-input-group"><label>👤 Name</label><input type="text" id="settings-username" autocomplete="nope" /></div>
-                <div class="profile-divider"></div>
-                <div class="profile-input-group"><label>ℹ️ About</label><input type="text" id="settings-about" autocomplete="nope" placeholder="Hey there! I am using Chit Chat." /></div>
-                <div class="profile-divider"></div>
-                <div class="profile-input-group" style="display:flex; justify-content:space-between; align-items:center;">
-                    <label style="margin-bottom: 0;">🎨 Chat Bubble Color</label>
-                    <input type="color" id="settings-bubble-color" value="#dcf8c6" style="width: 45px; height: 45px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 50%;">
-                </div>
-            </div>
-            <button id="save-profile-btn">Save Profile</button>
-        </div>
-    </div>
-
-    <div id="chat-screen" class="screen hidden">
-        <div class="app-header" id="chat-header">
-            <button id="back-btn" class="icon-btn">⬅</button>
-            <div id="header-click-area" style="display:flex; align-items:center; flex-grow:1; cursor:pointer;">
-                <img id="current-room-logo" src="" class="header-avatar">
-                <div class="header-text-container">
-                    <span id="current-room-name"></span>
-                    <span class="header-subtitle" id="online-users-text">Tap for group info</span>
-                </div>
-            </div>
-        </div>
-
-        <div id="chat-search-container" class="hidden">
-            <input type="text" id="chat-search-input" placeholder="Search in conversation..." autocomplete="nope">
-            <button id="close-search-btn">✖</button>
+    <div id="chat-interface">
+        <div class="chat-header">
+            <h2>Lobby 😸 <br><span>Lite Web Version</span></h2>
         </div>
         
-        <div id="pinned-banner" class="hidden">
-            <div>📌 <b id="pinned-user"></b>: <span id="pinned-text"></span></div>
-            <button id="unpin-btn">✖</button>
-        </div>
-
         <ul id="messages"></ul>
-
-        <div id="reply-preview-container" class="hidden">
-            <div id="reply-preview-text"></div>
-            <button type="button" id="cancel-reply-btn">✖</button>
-        </div>
-
-        <div id="chat-footer-controls">
-            <div class="input-pill">
-                <button id="poll-btn" class="icon-btn" style="font-size: 19px;">📊</button>
-                <input id="the-chat-box" type="text" autocomplete="nope" spellcheck="false" placeholder="Message" />
-                <button id="attach-btn" class="icon-btn">📎</button>
-                <input type="file" id="image-upload" accept="image/*, video/mp4, video/webm, image/gif" class="hidden" />
-                <button id="ghost-btn" class="icon-btn" style="font-size: 20px;">👻</button>
-            </div>
-            <button id="send-mic-btn" class="circle-btn">🎤</button>
+        
+        <div class="chat-input-area">
+            <input type="text" id="msg-input" placeholder="Type a message..." autocomplete="off">
+            <button id="send-btn">➤</button>
         </div>
     </div>
 
-    <div id="app-settings-modal" class="modal hidden">
-        <div class="modal-content menu-list">
-            <div class="modal-drag-pill"></div>
-            <h3 style="text-align: center; margin-bottom: 15px; color: var(--text-primary);">Settings ⚙️</h3>
-            <button id="btn-open-profile" class="menu-btn"><span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: var(--accent);">👤</span> Edit Profile</button>
+    <script>
+        const socket = io('https://chit-chat-lobby.onrender.com');
+        
+        let currentUser = "Web Guest " + Math.floor(Math.random() * 1000);
+        let userAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser}`;
+
+        const landingPage = document.getElementById('landing-page');
+        const chatInterface = document.getElementById('chat-interface');
+        const msgList = document.getElementById('messages');
+        const input = document.getElementById('msg-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // Switch from Landing to Chat
+        document.getElementById('join-lite-btn').addEventListener('click', () => {
+            const namePrompt = prompt("Enter your display name:", currentUser);
+            if (namePrompt && namePrompt.trim() !== '') {
+                currentUser = namePrompt.trim();
+                userAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser}`;
+            }
+
+            landingPage.style.display = 'none';
+            chatInterface.style.display = 'flex';
+
+            // Connect to main Lobby
+            socket.emit('join room', { 
+                roomId: 'lobby', 
+                password: '', 
+                user: { name: currentUser, avatar: userAvatar, about: 'Using Web Lite', color: '#005c4b' }, 
+                isReconnect: false 
+            });
+        });
+
+        // Handle incoming history
+        socket.on('chat history', (data) => {
+            msgList.innerHTML = '';
+            data.history.forEach(msg => renderMessage(msg));
+        });
+
+        // Handle live messages
+        socket.on('chat message', (msg) => {
+            renderMessage(msg);
+        });
+
+        // Render message function
+        function renderMessage(data) {
+            // Ignore system/game messages in the lite version to keep it simple
+            if (data.type === 'system' || data.type === 'game_session') return;
+
+            const li = document.createElement('li');
+            const isMe = data.user === currentUser;
+            li.className = `msg ${isMe ? 'msg-me' : 'msg-other'}`;
+
+            let textContent = data.text || "📷 [Attachment sent from App]";
             
-            <label class="premium-toggle menu-btn" style="border-bottom: 1px solid var(--border-color);">
-                <div style="display:flex; align-items:center; gap:15px;"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🔒</span> App Lock</div>
-                <div class="switch"><input type="checkbox" id="toggle-app-lock"><span class="slider"></span></div>
-            </label>
+            li.innerHTML = `
+                ${!isMe ? `<span class="msg-sender">${data.user}</span>` : ''}
+                ${escapeHTML(textContent)}
+                <span class="msg-time">${data.time}</span>
+            `;
+            
+            msgList.appendChild(li);
+            msgList.scrollTop = msgList.scrollHeight;
+        }
 
-            <button id="btn-theme-cycle" class="menu-btn"><span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;" id="theme-btn-icon">☀️</span> App Theme</button>
-            <button id="btn-logout" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🚪</span> Logout & Reset App</button>
-        </div>
-    </div>
+        // Send logic
+        function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
 
-    <div id="group-info-modal" class="modal hidden"> <div class="modal-content" style="align-items: center;"> <div class="modal-drag-pill"></div> <div id="info-avatar-container" onclick="document.getElementById('group-pic-upload').click()"> <img id="info-room-logo" src=""> <div class="edit-icon">📷</div> </div> <input type="file" id="group-pic-upload" accept="image/*" class="hidden" /> <div class="input-with-icon" style="width: 100%;"> <span class="input-icon">🏷️</span> <input type="text" id="info-room-name" class="premium-input" placeholder="Group Name"> </div> <button id="save-group-info-btn" class="primary-btn" style="margin-bottom: 25px;">Save Name</button> <div class="menu-list" style="width: 100%;"> <button id="btn-open-search" class="menu-btn"><span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;">🔍</span> Search Chat</button> <button id="btn-change-wallpaper" class="menu-btn"><span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: var(--accent);">🖼️</span> Set Wallpaper</button> <button id="btn-reset-wallpaper" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Reset Wallpaper</button> <input type="file" id="wallpaper-upload" accept="image/*" class="hidden"> </div> </div> </div>
-    <div id="create-poll-modal" class="modal hidden"> <div class="modal-content form-modal"> <div class="modal-drag-pill"></div> <h3>Create a Poll 📊</h3> <input type="text" id="poll-question" class="premium-input" placeholder="Ask a question..." style="margin-top:15px; margin-bottom: 15px;"> <div id="poll-options-container" style="display:flex; flex-direction:column; gap:8px;"> <input type="text" class="premium-input poll-opt-input" placeholder="Option 1" style="margin-bottom:0;"> <input type="text" class="premium-input poll-opt-input" placeholder="Option 2" style="margin-bottom:0;"> </div> <button id="add-poll-opt-btn" class="menu-btn" style="color:var(--accent); justify-content:center; margin-top:10px; border:1px dashed var(--accent); border-radius:15px;">➕ Add Option</button> <button id="send-poll-btn" class="primary-btn" style="margin-top:15px;">Send Poll</button> </div> </div>
-    <div id="view-profile-modal" class="modal hidden"> <div class="modal-content" style="align-items: center; text-align: center;"> <div class="modal-drag-pill"></div> <img id="view-profile-avatar" src="" style="width:120px; height:120px; border-radius:50%; margin-bottom:10px; object-fit:cover; border: 3px solid var(--accent);"> <h2 id="view-profile-name" style="margin-bottom: 5px;"></h2> <p id="view-profile-about" style="font-size: 15px; margin-bottom: 8px;"></p> <p id="view-profile-last-seen"></p> <button class="primary-btn" onclick="document.getElementById('view-profile-modal').classList.add('hidden')">Close</button> </div> </div>
-    <div id="message-options-modal" class="modal hidden"> <div class="modal-content menu-list" style="padding-top: 15px;"> <div class="modal-drag-pill"></div> <div class="reaction-bar"> <button class="react-btn">❤️</button> <button class="react-btn">😂</button> <button class="react-btn">😲</button> <button class="react-btn">😢</button> <button class="react-btn">🙏</button> <button class="react-btn">👍</button> </div> <button id="opt-reply" class="menu-btn"><span class="menu-icon" style="background: rgba(83, 189, 235, 0.15); color: #53bdeb;">↩️</span> Reply</button> <button id="opt-pin" class="menu-btn"><span class="menu-icon" style="background: rgba(255, 179, 0, 0.15); color: #ffb300;">📌</span> Pin</button> <button id="opt-edit" class="menu-btn hidden"><span class="menu-icon" style="background: rgba(0, 168, 132, 0.15); color: var(--accent);">✏️</span> Edit</button> <button id="opt-delete" class="menu-btn danger"><span class="menu-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">🗑️</span> Delete</button> </div> </div>
-    <div id="create-room-modal" class="modal hidden"> <div class="modal-content form-modal"> <div class="modal-drag-pill"></div> <h3>New Room</h3> <div style="margin-top: 15px; margin-bottom: 10px;"> <input type="text" id="new-room-name" class="premium-input" placeholder="Room Name" autocomplete="nope"> </div> <label class="premium-toggle"> <span>Private (Needs Password)</span> <div class="switch"><input type="checkbox" id="new-room-private"><span class="slider"></span></div> </label> <div class="hidden" id="password-input-container" style="margin-bottom: 10px;"> <input type="text" id="new-room-pass" class="premium-input" placeholder="Password" autocomplete="nope"> </div> <button id="create-room-submit" class="primary-btn" style="margin-top: 15px;">Create</button> </div> </div>
-    <div id="password-modal" class="modal hidden"> <div class="modal-content form-modal"> <div class="modal-drag-pill"></div> <h3>Private Room</h3> <p class="modal-subtitle" style="margin-bottom: 15px;">This room requires a password</p> <input type="text" id="join-room-pass" class="premium-input" placeholder="Enter Password" autocomplete="nope" style="margin-bottom: 15px;"> <button id="join-room-submit" class="primary-btn">Join Room</button> </div> </div>
+            socket.emit('chat message', {
+                user: currentUser,
+                avatar: userAvatar,
+                color: '#005c4b',
+                text: text,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isGhost: false
+            });
 
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    
-    <script src="script.js"></script>
+            input.value = '';
+            input.focus();
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Safe HTML escaper
+        function escapeHTML(str) { 
+            const div = document.createElement('div'); 
+            div.textContent = str; 
+            return div.innerHTML; 
+        }
+    </script>
 </body>
 </html>
